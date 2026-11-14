@@ -52,6 +52,52 @@ class HealthResponse(BaseModel):
     database: str = Field(examples=["ok"])
 
 
+# --------------------------------------------------------------------------- users & auth
+
+
+class UserCreate(BaseModel):
+    """Request body for creating a user account."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "email": "organizer@acme.com",
+                "full_name": "Event Organizer",
+                "password": "Str0ngPassw0rd!",
+            }
+        },
+    )
+
+    email: EmailStr
+    full_name: PersonName
+    password: str = Field(min_length=8, max_length=128, description="At least 8 characters.")
+
+    @field_validator("email")
+    @classmethod
+    def normalise_email(cls, value: str) -> str:
+        """Store e-mails in lower case so logins are case-insensitive."""
+        return value.lower()
+
+
+class UserRead(BaseModel):
+    """A user as returned by the API (never includes the password hash)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: EmailStr
+    full_name: str
+    created_at: datetime
+
+
+class Token(BaseModel):
+    """OAuth2-compatible access-token response."""
+
+    access_token: str = Field(examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."])
+    token_type: str = Field(default="bearer", examples=["bearer"])
+
+
 # --------------------------------------------------------------------------- events
 
 
@@ -119,6 +165,7 @@ class EventRead(EventBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    created_by_id: int | None = Field(default=None, description="Id of the user who created it.")
     registered_count: int = Field(default=0, description="Number of current registrations.")
     created_at: datetime
     updated_at: datetime

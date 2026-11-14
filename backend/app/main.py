@@ -17,16 +17,23 @@ from typing import Annotated, Any
 from fastapi import Depends, FastAPI, Path, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import schemas, services
 from app.config import settings
 from app.db import get_session
+from app.security import CurrentUser, get_current_user
 
 logger = logging.getLogger("app")
 
 # Metadata shown in Swagger UI. Tags group endpoints into sections.
 TAGS_METADATA = [
+    {
+        "name": "Auth",
+        "description": "Sign up and log in to get a JWT. Click **Authorize** in Swagger UI, "
+        "enter your e-mail as *username* and your password, and protected routes will work.",
+    },
     {"name": "Events", "description": "Create, browse, update and delete corporate events."},
     {"name": "Registrations", "description": "Register employees for events and cancel seats."},
     {"name": "Health", "description": "Liveness and database connectivity check."},
@@ -41,7 +48,9 @@ app = FastAPI(
         "conferences, and register for them. Business rules:\n\n"
         "* an employee cannot register for the same event twice (**409**)\n"
         "* an event cannot accept registrations beyond its capacity (**409**)\n"
-        "* registering for a non-existent event is rejected (**404**)"
+        "* registering for a non-existent event is rejected (**404**)\n\n"
+        "Browsing events and registering is public. Creating, updating and deleting events, "
+        "and cancelling registrations, require a JWT (🔒)."
     ),
     openapi_tags=TAGS_METADATA,
     contact={"name": "Acme Corp Platform Team"},
@@ -72,6 +81,7 @@ def error_doc(description: str) -> dict[str, Any]:
 
 
 NOT_FOUND_EVENT = {status.HTTP_404_NOT_FOUND: error_doc("Event not found.")}
+UNAUTHORIZED = {status.HTTP_401_UNAUTHORIZED: error_doc("Missing, invalid or expired token.")}
 
 
 # --------------------------------------------------------------------------- error handlers
@@ -87,6 +97,16 @@ async def not_found_handler(_: Request, exc: services.NotFoundError) -> JSONResp
 async def conflict_handler(_: Request, exc: services.ConflictError) -> JSONResponse:
     """Turn a ``ConflictError`` (duplicate, full event, ...) into an HTTP 409 response."""
     return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": exc.message})
+
+
+@app.exception_handler(services.AuthenticationError)
+async def authentication_handler(_: Request, exc: services.AuthenticationError) -> JSONResponse:
+    """Turn a failed login into an HTTP 401 response with the standard Bearer challenge."""
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": exc.message},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @app.exception_handler(Exception)
@@ -116,6 +136,51 @@ async def health(session: SessionDep) -> schemas.HealthResponse:
     return schemas.HealthResponse(status="ok", database="ok" if db_ok else "unavailable")
 
 
+# --------------------------------------------------------------------------- auth
+
+
+@app.post(
+    "/auth/register",
+    response_model=schemas.UserRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Auth"],
+    summary="Create an account",
+    description="Create a user account. Passwords are hashed with Argon2 before being stored.",
+    responses={status.HTTP_409_CONFLICT: error_doc("E-mail already registered.")},
+)
+async def register_user(payload: schemas.UserCreate, session: SessionDep) -> Any:
+    """Create a new user account."""
+    return await services.register_user(session, payload)
+
+
+@app.post(
+    "/auth/login",
+    response_model=schemas.Token,
+    tags=["Auth"],
+    summary="Log in and get an access token",
+    description="OAuth2 password flow. Send form fields `username` (your e-mail) and "
+    "`password`. The response contains a Bearer token for protected routes.",
+    responses={status.HTTP_401_UNAUTHORIZED: error_doc("Incorrect e-mail or password.")},
+)
+async def login(
+    form: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep
+) -> schemas.Token:
+    """Exchange e-mail + password for a JWT access token."""
+    return await services.authenticate_user(session, form.username, form.password)
+
+
+@app.get(
+    "/auth/me",
+    response_model=schemas.UserRead,
+    tags=["Auth"],
+    summary="Get the current user 🔒",
+    responses=UNAUTHORIZED,
+)
+async def read_current_user(current_user: CurrentUser) -> Any:
+    """Return the account that owns the access token."""
+    return current_user
+
+
 # --------------------------------------------------------------------------- events
 
 
@@ -124,13 +189,16 @@ async def health(session: SessionDep) -> schemas.HealthResponse:
     response_model=schemas.EventRead,
     status_code=status.HTTP_201_CREATED,
     tags=["Events"],
-    summary="Create an event",
+    summary="Create an event 🔒",
     description="Create a new corporate event. `title` and `location` cannot be blank, "
     "`event_date` must be a valid ISO 8601 datetime and `max_capacity` must be greater than 0.",
+    responses=UNAUTHORIZED,
 )
-async def create_event(payload: schemas.EventCreate, session: SessionDep) -> Any:
-    """Create a new event."""
-    return await services.create_event(session, payload)
+async def create_event(
+    payload: schemas.EventCreate, session: SessionDep, current_user: CurrentUser
+) -> Any:
+    """Create a new event owned by the logged-in user."""
+    return await services.create_event(session, payload, created_by=current_user)
 
 
 @app.get(
@@ -162,16 +230,18 @@ async def get_event(event_id: EventId, session: SessionDep) -> Any:
     "/events/{event_id}",
     response_model=schemas.EventRead,
     tags=["Events"],
-    summary="Update an event",
+    summary="Update an event 🔒",
     description="Update one or more fields of an event. Fields that are not sent stay "
     "unchanged. `max_capacity` cannot be lowered below the current number of registrations.",
     responses={
+        **UNAUTHORIZED,
         **NOT_FOUND_EVENT,
         status.HTTP_409_CONFLICT: error_doc("New capacity is below current registrations."),
     },
+    dependencies=[Depends(get_current_user)],
 )
 async def update_event(event_id: EventId, payload: schemas.EventUpdate, session: SessionDep) -> Any:
-    """Update an existing event."""
+    """Update an existing event (any logged-in user may do this)."""
     return await services.update_event(session, event_id, payload)
 
 
@@ -179,9 +249,10 @@ async def update_event(event_id: EventId, payload: schemas.EventUpdate, session:
     "/events/{event_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Events"],
-    summary="Delete an event",
+    summary="Delete an event 🔒",
     description="Delete an event together with all of its registrations.",
-    responses=NOT_FOUND_EVENT,
+    responses={**UNAUTHORIZED, **NOT_FOUND_EVENT},
+    dependencies=[Depends(get_current_user)],
 )
 async def delete_event(event_id: EventId, session: SessionDep) -> None:
     """Delete an event."""
@@ -230,9 +301,10 @@ async def list_registrations(event_id: EventId, session: SessionDep) -> Any:
     "/registrations/{registration_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Registrations"],
-    summary="Cancel a registration",
+    summary="Cancel a registration 🔒",
     description="Cancel a registration, freeing the seat for someone else.",
-    responses={status.HTTP_404_NOT_FOUND: error_doc("Registration not found.")},
+    responses={**UNAUTHORIZED, status.HTTP_404_NOT_FOUND: error_doc("Registration not found.")},
+    dependencies=[Depends(get_current_user)],
 )
 async def cancel_registration(registration_id: RegistrationId, session: SessionDep) -> None:
     """Cancel a registration."""
