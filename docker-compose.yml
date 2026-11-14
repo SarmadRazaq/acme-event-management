@@ -1,6 +1,14 @@
-# Local infrastructure for the Acme Event Management project.
-# Start the database with:  docker compose up -d db
+# Full production-style stack for the Acme Event Management project.
+#
+#   cp .env.example .env        # then set JWT_SECRET_KEY and POSTGRES_PASSWORD
+#   docker compose up -d --build
+#
+#   Frontend + API (via nginx):  http://localhost:8080
+#   API / Swagger directly:      http://127.0.0.1:8000/docs
+#
+# Only the database for local development:  docker compose up -d db
 name: acme-events
+
 services:
   db:
     image: postgres:16
@@ -19,6 +27,37 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    build: ./backend
+    image: acme-events-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-acme_events}
+      # Required in production. The app refuses to start with a missing or placeholder secret.
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    image: acme-events-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8080}:8080"
 
 volumes:
   pgdata:
