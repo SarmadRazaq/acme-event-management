@@ -10,13 +10,23 @@ Each resource has separate schemas for its different jobs:
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    StringConstraints,
+    computed_field,
+    field_validator,
+)
 
 # Reusable constrained string types. ``strip_whitespace`` turns "   " into "", which then
 # fails ``min_length=1``, so blank titles are rejected with a 422.
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Location = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Description = Annotated[str, StringConstraints(strip_whitespace=True, max_length=5000)]
+PersonName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+Department = Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)]
 Capacity = Annotated[int, Field(gt=0, le=100_000, description="Maximum number of attendees.")]
 
 
@@ -78,5 +88,53 @@ class EventRead(EventBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    registered_count: int = Field(default=0, description="Number of current registrations.")
     created_at: datetime
     updated_at: datetime
+
+    @computed_field(description="Seats still available.")  # type: ignore[prop-decorator]
+    @property
+    def available_spots(self) -> int:
+        """Return how many seats are left (never negative)."""
+        return max(self.max_capacity - self.registered_count, 0)
+
+
+# --------------------------------------------------------------------------- registrations
+
+
+class RegistrationCreate(BaseModel):
+    """Request body for registering an employee for an event."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "employee_name": "Ayesha Khan",
+                "employee_email": "ayesha.khan@acme.com",
+                "department": "Engineering",
+            }
+        },
+    )
+
+    employee_name: PersonName = Field(description="Full name of the employee.")
+    employee_email: EmailStr = Field(description="Work e-mail address of the employee.")
+    department: Department | None = Field(default=None, description="Optional department.")
+
+    @field_validator("employee_email")
+    @classmethod
+    def normalise_email(cls, value: str) -> str:
+        """Store e-mails in lower case so ``A@acme.com`` and ``a@acme.com`` count as one person."""
+        return value.lower()
+
+
+class RegistrationRead(BaseModel):
+    """A registration as returned by the API."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    event_id: int
+    employee_name: str
+    employee_email: EmailStr
+    department: str | None
+    created_at: datetime
