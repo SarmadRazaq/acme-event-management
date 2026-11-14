@@ -12,11 +12,11 @@ import { ThemeToggle } from './ThemeToggle'
 // Evaluated once at module load (keeps render pure).
 const CURRENT_YEAR = new Date().getFullYear()
 
-/** Brand mark: gradient badge + wordmark. */
+/** Brand mark: blue badge + wordmark. */
 function Logo({ className }: { className?: string }) {
   return (
     <span className={cn('flex items-center gap-2 font-heading text-lg font-extrabold', className)} translate="no">
-      <span className="grid size-9 place-items-center rounded-xl bg-linear-to-br from-primary to-brand-accent text-white shadow-md shadow-primary/30">
+      <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/30">
         <SparklesIcon className="size-4.5" aria-hidden />
       </span>
       Acme Events
@@ -25,8 +25,8 @@ function Logo({ className }: { className?: string }) {
 }
 
 /**
- * App shell, styled like an event site: a floating white navigation pill over each page's
- * dark hero, the page on a light "sheet" with rounded bottom corners, and a navy footer.
+ * App shell, styled like a light event site: a floating white navigation pill over each
+ * page's soft-wash hero, the page itself, and a light footer.
  */
 export function Layout() {
   const user = useAuthStore((state) => state.user)
@@ -40,7 +40,7 @@ export function Layout() {
     )
 
   return (
-    <div className="flex min-h-svh flex-col bg-navy">
+    <div className="flex min-h-svh flex-col bg-background">
       {/* Keyboard users can jump straight past the navigation. */}
       <a
         href="#main"
@@ -50,7 +50,7 @@ export function Layout() {
       </a>
 
       <header className="absolute inset-x-0 top-4 z-20 px-4">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 rounded-full bg-background/95 py-2 pr-2 pl-5 shadow-xl shadow-black/20 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 rounded-full bg-card/85 py-2 pr-2 pl-5 shadow-lg shadow-navy/5 ring-1 ring-border backdrop-blur">
           <Link to="/" aria-label="Acme Events home">
             <Logo />
           </Link>
@@ -98,7 +98,7 @@ export function Layout() {
       <main
         id="main"
         tabIndex={-1}
-        className="flex-1 overflow-hidden rounded-b-[2.5rem] bg-background pb-16 outline-none"
+        className="flex-1 overflow-hidden pb-20 outline-none"
       >
         <Outlet />
       </main>
@@ -108,16 +108,16 @@ export function Layout() {
   )
 }
 
-/** Navy footer with a call-to-action band and link columns. */
+/** Light footer with a call-to-action band and link columns. */
 function SiteFooter({ signedIn }: { signedIn: boolean }) {
   return (
-    <footer className="text-navy-foreground">
+    <footer className="border-t bg-card text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-16 pb-10">
         <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <h2 className="font-heading text-3xl font-extrabold tracking-tight text-balance uppercase sm:text-4xl">
             Hosting something?
             <br />
-            <span className="bg-linear-to-r from-primary to-brand-accent bg-clip-text text-transparent">
+            <span className="text-primary">
               Put it on the calendar.
             </span>
           </h2>
@@ -129,33 +129,33 @@ function SiteFooter({ signedIn }: { signedIn: boolean }) {
           </Button>
         </div>
 
-        <div className="grid gap-10 border-t border-white/10 pt-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 border-t pt-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-3 lg:col-span-2">
-            <Logo className="text-white" />
-            <p className="max-w-sm text-sm text-navy-foreground/60">
+            <Logo />
+            <p className="max-w-sm text-sm text-muted-foreground">
               The internal home for <span translate="no">Acme Corp</span> product launches, workshops,
               team-building activities and conferences.
             </p>
           </div>
           <div className="flex flex-col gap-3 text-sm">
-            <h3 className="font-semibold text-white">Explore</h3>
-            <Link to="/" className="text-navy-foreground/60 hover:text-white">
+            <h3 className="font-semibold">Explore</h3>
+            <Link to="/" className="text-muted-foreground hover:text-foreground">
               All Events
             </Link>
-            <Link to={signedIn ? '/events/new' : '/login'} className="text-navy-foreground/60 hover:text-white">
+            <Link to={signedIn ? '/events/new' : '/login'} className="text-muted-foreground hover:text-foreground">
               Create an Event
             </Link>
           </div>
           <div className="flex flex-col gap-3 text-sm">
-            <h3 className="font-semibold text-white">Account</h3>
+            <h3 className="font-semibold">Account</h3>
             {signedIn ? (
-              <span className="text-navy-foreground/60">You are signed in</span>
+              <span className="text-muted-foreground">You are signed in</span>
             ) : (
               <>
-                <Link to="/login" className="text-navy-foreground/60 hover:text-white">
+                <Link to="/login" className="text-muted-foreground hover:text-foreground">
                   Log In
                 </Link>
-                <Link to="/signup" className="text-navy-foreground/60 hover:text-white">
+                <Link to="/signup" className="text-muted-foreground hover:text-foreground">
                   Sign Up
                 </Link>
               </>
@@ -163,7 +163,7 @@ function SiteFooter({ signedIn }: { signedIn: boolean }) {
           </div>
         </div>
 
-        <p className="flex flex-wrap justify-between gap-2 border-t border-white/10 pt-6 text-xs text-navy-foreground/50">
+        <p className="flex flex-wrap justify-between gap-2 border-t pt-6 text-xs text-muted-foreground">
           <span>
             © {CURRENT_YEAR} <span translate="no">Acme Corp</span>. Internal use only.
           </span>
