@@ -98,13 +98,24 @@ def pagination_params(
 PaginationDep = Annotated[Pagination, Depends(pagination_params)]
 
 
-def error_doc(description: str) -> dict[str, Any]:
-    """Build an OpenAPI ``responses`` entry that documents an error status code."""
-    return {"model": schemas.ErrorResponse, "description": description}
+def error_doc(description: str, example: str) -> dict[str, Any]:
+    """Build an OpenAPI ``responses`` entry documenting an error status with an example body."""
+    return {
+        "model": schemas.ErrorResponse,
+        "description": description,
+        "content": {"application/json": {"example": {"detail": example}}},
+    }
 
 
-NOT_FOUND_EVENT = {status.HTTP_404_NOT_FOUND: error_doc("Event not found.")}
-UNAUTHORIZED = {status.HTTP_401_UNAUTHORIZED: error_doc("Missing, invalid or expired token.")}
+NOT_FOUND_EVENT = {
+    status.HTTP_404_NOT_FOUND: error_doc("Event not found.", "Event with id 42 not found.")
+}
+UNAUTHORIZED = {
+    status.HTTP_401_UNAUTHORIZED: error_doc(
+        "Missing, invalid or expired token.",
+        "Could not validate credentials. Please log in again.",
+    )
+}
 
 
 # --------------------------------------------------------------------------- error handlers
@@ -169,7 +180,12 @@ async def health(session: SessionDep) -> schemas.HealthResponse:
     tags=["Auth"],
     summary="Create an account",
     description="Create a user account. Passwords are hashed with Argon2 before being stored.",
-    responses={status.HTTP_409_CONFLICT: error_doc("E-mail already registered.")},
+    responses={
+        status.HTTP_409_CONFLICT: error_doc(
+            "E-mail already registered.",
+            "An account with e-mail organizer@acme.com already exists.",
+        )
+    },
 )
 async def register_user(payload: schemas.UserCreate, session: SessionDep) -> Any:
     """Create a new user account."""
@@ -183,7 +199,11 @@ async def register_user(payload: schemas.UserCreate, session: SessionDep) -> Any
     summary="Log in and get an access token",
     description="OAuth2 password flow. Send form fields `username` (your e-mail) and "
     "`password`. The response contains a Bearer token for protected routes.",
-    responses={status.HTTP_401_UNAUTHORIZED: error_doc("Incorrect e-mail or password.")},
+    responses={
+        status.HTTP_401_UNAUTHORIZED: error_doc(
+            "Incorrect e-mail or password.", "Incorrect e-mail or password."
+        )
+    },
 )
 async def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep
@@ -277,7 +297,10 @@ async def get_event(event_id: EventId, session: SessionDep) -> Any:
     responses={
         **UNAUTHORIZED,
         **NOT_FOUND_EVENT,
-        status.HTTP_409_CONFLICT: error_doc("New capacity is below current registrations."),
+        status.HTTP_409_CONFLICT: error_doc(
+            "New capacity is below current registrations.",
+            "Cannot set max_capacity to 1: 2 employees are already registered.",
+        ),
     },
     dependencies=[Depends(get_current_user)],
 )
@@ -314,7 +337,8 @@ async def delete_event(event_id: EventId, session: SessionDep) -> None:
     responses={
         **NOT_FOUND_EVENT,
         status.HTTP_409_CONFLICT: error_doc(
-            "The employee is already registered, or the event is full."
+            "The employee is already registered, or the event is full.",
+            "ayesha.khan@acme.com is already registered for this event.",
         ),
     },
 )
@@ -347,7 +371,12 @@ async def list_registrations(event_id: EventId, session: SessionDep, page: Pagin
     tags=["Registrations"],
     summary="Cancel a registration 🔒",
     description="Cancel a registration, freeing the seat for someone else.",
-    responses={**UNAUTHORIZED, status.HTTP_404_NOT_FOUND: error_doc("Registration not found.")},
+    responses={
+        **UNAUTHORIZED,
+        status.HTTP_404_NOT_FOUND: error_doc(
+            "Registration not found.", "Registration with id 7 not found."
+        ),
+    },
     dependencies=[Depends(get_current_user)],
 )
 async def cancel_registration(registration_id: RegistrationId, session: SessionDep) -> None:
