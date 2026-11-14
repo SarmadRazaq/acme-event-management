@@ -61,7 +61,7 @@ export function EventForm({ initial, submitLabel, isSubmitting, error, onSubmit,
   )
 
   const cancelButton = (
-    <Button type="button" variant="outline" onClick={isDirty ? undefined : onCancel}>
+    <Button type="button" variant="outline" size="pill" onClick={isDirty ? undefined : onCancel}>
       Cancel
     </Button>
   )
@@ -150,7 +150,7 @@ export function EventForm({ initial, submitLabel, isSubmitting, error, onSubmit,
           ) : (
             cancelButton
           )}
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" variant="gradient" size="pill" disabled={isSubmitting}>
             {isSubmitting && <Spinner data-icon="inline-start" />}
             {isSubmitting ? 'Saving…' : submitLabel}
           </Button>

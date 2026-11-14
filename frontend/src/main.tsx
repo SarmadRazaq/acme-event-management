@@ -1,4 +1,3 @@
-import '@fontsource-variable/geist'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { StrictMode } from 'react'

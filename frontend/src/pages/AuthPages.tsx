@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 
 import { FormError } from '@/components/Feedback'
+import { PageHero } from '@/components/PageHero'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -21,15 +22,22 @@ import { useIsAuthenticated } from '@/store/authStore'
 /** Centered card used by the login and sign-up pages. */
 function AuthCard({ title, subtitle, children }: { title: string; subtitle: ReactNode; children: ReactNode }) {
   return (
-    <Card className="mx-auto mt-6 w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle>
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        </CardTitle>
-        <CardDescription>{subtitle}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <>
+      <PageHero title={title} crumbs={[{ label: title }]} />
+      <div className="px-4">
+        <Card className="relative z-10 mx-auto -mt-8 w-full max-w-md shadow-xl shadow-navy/10">
+          <CardHeader className="text-center">
+            <CardTitle>
+              <h2 className="font-heading text-xl font-bold">
+                {title === 'Log In' ? 'Welcome Back' : 'Join Acme Events'}
+              </h2>
+            </CardTitle>
+            <CardDescription>{subtitle}</CardDescription>
+          </CardHeader>
+          <CardContent>{children}</CardContent>
+        </Card>
+      </div>
+    </>
   )
 }
 
@@ -94,7 +102,7 @@ export function LoginPage() {
             <FieldError errors={[errors.password]} />
           </Field>
           <FormError error={login.error} />
-          <Button type="submit" className="w-full" disabled={login.isPending}>
+          <Button type="submit" variant="gradient" size="pill" className="w-full" disabled={login.isPending}>
             {login.isPending && <Spinner data-icon="inline-start" />}
             {login.isPending ? 'Logging In…' : 'Log In'}
           </Button>
@@ -170,7 +178,7 @@ export function SignupPage() {
             <FieldError errors={[errors.password]} />
           </Field>
           <FormError error={signup.error} />
-          <Button type="submit" className="w-full" disabled={signup.isPending}>
+          <Button type="submit" variant="gradient" size="pill" className="w-full" disabled={signup.isPending}>
             {signup.isPending && <Spinner data-icon="inline-start" />}
             {signup.isPending ? 'Creating Account…' : 'Sign Up'}
           </Button>
