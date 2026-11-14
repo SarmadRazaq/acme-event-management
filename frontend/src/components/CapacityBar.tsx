@@ -1,28 +1,27 @@
-/** Progress bar showing how full an event is. */
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
+
+/** Shows how full an event is, as numbers and a progress bar. */
 export function CapacityBar({ registered, capacity }: { registered: number; capacity: number }) {
   const percent = capacity > 0 ? Math.min(100, Math.round((registered / capacity) * 100)) : 0
   const full = registered >= capacity
-  const color = full ? 'bg-rose-500' : percent >= 75 ? 'bg-amber-500' : 'bg-emerald-500'
+  const left = Math.max(capacity - registered, 0)
 
   return (
-    <div>
-      <div className="mb-1 flex justify-between text-xs text-slate-500">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>
           {registered} / {capacity} registered
         </span>
-        <span className={full ? 'font-medium text-rose-600' : ''}>
-          {full ? 'Full' : `${capacity - registered} spots left`}
+        <span className={cn(full && 'font-medium text-destructive')}>
+          {full ? 'Full' : `${left} ${left === 1 ? 'spot' : 'spots'} left`}
         </span>
       </div>
-      <div
-        className="h-2 overflow-hidden rounded-full bg-slate-100"
-        role="progressbar"
-        aria-valuenow={registered}
-        aria-valuemin={0}
-        aria-valuemax={capacity}
-      >
-        <div className={`h-full ${color} transition-all`} style={{ width: `${percent}%` }} />
-      </div>
+      <Progress
+        value={percent}
+        aria-label={`${registered} of ${capacity} seats taken`}
+        className={cn(full && '[&>[data-slot=progress-indicator]]:bg-destructive')}
+      />
     </div>
   )
 }
