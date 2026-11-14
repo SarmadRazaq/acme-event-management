@@ -1,0 +1,15 @@
+# Development override: hot-reloading backend with the source code mounted from the host.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build db backend
+#
+# (Run the frontend with `npm run dev` on the host for instant hot module reloading.)
+services:
+  backend:
+    environment:
+      ENVIRONMENT: development
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-only-insecure-secret-change-me}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
