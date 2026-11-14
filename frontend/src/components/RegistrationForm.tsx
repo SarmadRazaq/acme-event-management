@@ -42,10 +42,10 @@ export function RegistrationForm({ eventId, isFull }: { eventId: number; isFull:
   )
 
   return (
-    <Card>
+    <Card className="shadow-xl shadow-navy/10">
       <CardHeader>
         <CardTitle>
-          <h2>Register for This Event</h2>
+          <h2 className="font-heading text-lg font-bold">Register for This Event</h2>
         </CardTitle>
         <CardDescription>
           {isFull ? 'This event is full. New registrations will be rejected.' : 'Each employee can register once.'}
@@ -85,7 +85,7 @@ export function RegistrationForm({ eventId, isFull }: { eventId: number; isFull:
 
             <FormError error={mutation.error} />
 
-            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+            <Button type="submit" variant="gradient" size="pill" className="w-full" disabled={mutation.isPending}>
               {mutation.isPending && <Spinner data-icon="inline-start" />}
               {mutation.isPending ? 'Registering…' : isFull ? 'Try to Register' : 'Register'}
             </Button>
