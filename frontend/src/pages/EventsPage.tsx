@@ -2,6 +2,7 @@ import { CalendarSearchIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
+import { DatePicker } from '@/components/DatePicker'
 import { EventCard } from '@/components/EventCard'
 import { EmptyState, ErrorState } from '@/components/Feedback'
 import { PageHero } from '@/components/PageHero'
@@ -103,12 +104,11 @@ export function EventsPage() {
             <Label htmlFor="search-date" className="sr-only">
               Date
             </Label>
-            <Input
+            <DatePicker
               id="search-date"
-              type="date"
-              className="h-10 w-auto rounded-full"
+              className="min-w-40"
               value={date}
-              onChange={(e) => updateParams({ date: e.target.value, skip: '' })}
+              onChange={(value) => updateParams({ date: value, skip: '' })}
             />
             {hasFilters && (
               <Button
