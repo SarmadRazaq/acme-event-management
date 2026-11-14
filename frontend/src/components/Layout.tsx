@@ -16,7 +16,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 function Logo({ className }: { className?: string }) {
   return (
     <span className={cn('flex items-center gap-2 font-heading text-lg font-extrabold', className)} translate="no">
-      <span className="grid size-9 place-items-center rounded-xl bg-linear-to-br from-primary to-brand-pink text-white shadow-md shadow-primary/30">
+      <span className="grid size-9 place-items-center rounded-xl bg-linear-to-br from-primary to-brand-accent text-white shadow-md shadow-primary/30">
         <SparklesIcon className="size-4.5" aria-hidden />
       </span>
       Acme Events
@@ -117,7 +117,7 @@ function SiteFooter({ signedIn }: { signedIn: boolean }) {
           <h2 className="font-heading text-3xl font-extrabold tracking-tight text-balance uppercase sm:text-4xl">
             Hosting something?
             <br />
-            <span className="bg-linear-to-r from-primary to-brand-pink bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-primary to-brand-accent bg-clip-text text-transparent">
               Put it on the calendar.
             </span>
           </h2>

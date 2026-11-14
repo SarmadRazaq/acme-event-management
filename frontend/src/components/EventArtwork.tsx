@@ -35,7 +35,7 @@ export function EventArtwork({
           // …a warm glow on the "stage"…
           `radial-gradient(70% 45% at 50% 105%, oklch(0.55 0.2 ${a} / 0.75), transparent 75%)`,
           // …and a dark vignette.
-          'linear-gradient(180deg, oklch(0.18 0.06 278 / 0.1), oklch(0.12 0.05 278 / 0.7))',
+          'linear-gradient(180deg, oklch(0.2 0.07 281 / 0.1), oklch(0.13 0.06 281 / 0.7))',
         ].join(','),
       }}
     >
