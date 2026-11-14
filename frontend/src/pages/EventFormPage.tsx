@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from 'react-router'
 
-import { getStatus } from '../api/client'
-import { EventForm } from '../components/EventForm'
-import { ErrorState, Spinner } from '../components/Feedback'
-import { useCreateEvent, useEventQuery, useUpdateEvent } from '../hooks/useEvents'
+import { getStatus } from '@/api/client'
+import { EventForm } from '@/components/EventForm'
+import { ErrorState, Loading } from '@/components/Feedback'
+import { useCreateEvent, useEventQuery, useUpdateEvent } from '@/hooks/useEvents'
+
 import { NotFoundPage } from './NotFoundPage'
 
 /** "New event" page (protected). */
@@ -12,10 +13,10 @@ export function CreateEventPage() {
   const mutation = useCreateEvent()
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Create an event</h1>
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      <h1 className="text-2xl font-bold tracking-tight">Create an Event</h1>
       <EventForm
-        submitLabel="Create event"
+        submitLabel="Create Event"
         isSubmitting={mutation.isPending}
         error={mutation.error}
         onSubmit={(input) =>
@@ -34,7 +35,7 @@ export function EditEventPage() {
   const query = useEventQuery(eventId)
   const mutation = useUpdateEvent(eventId)
 
-  if (query.isPending) return <Spinner label="Loading event…" />
+  if (query.isPending) return <Loading label="Loading event…" />
   if (query.isError) {
     return getStatus(query.error) === 404 ? (
       <NotFoundPage message="This event does not exist." />
@@ -44,13 +45,15 @@ export function EditEventPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Edit “{query.data.title}”</h1>
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      <h1 className="text-2xl font-bold tracking-tight break-words text-balance">
+        Edit “{query.data.title}”
+      </h1>
       <EventForm
         // Re-mount the form if the cached event changes, so its default values stay in sync.
         key={query.data.updated_at}
         initial={query.data}
-        submitLabel="Save changes"
+        submitLabel="Save Changes"
         isSubmitting={mutation.isPending}
         error={mutation.error}
         onSubmit={(input) =>
