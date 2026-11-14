@@ -6,8 +6,18 @@ has a Python type that editors and type checkers understand.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    select,
+)
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.db import Base
 
@@ -40,6 +50,51 @@ class Event(TimestampMixin, Base):
     location: Mapped[str] = mapped_column(String(200), nullable=False)
     max_capacity: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    # One event has many registrations. ``passive_deletes`` lets PostgreSQL's
+    # ON DELETE CASCADE remove them, instead of SQLAlchemy loading each one first.
+    registrations: Mapped[list["Registration"]] = relationship(
+        back_populates="event", cascade="all, delete-orphan", passive_deletes=True
+    )
+
     def __repr__(self) -> str:
         """Return a short developer-friendly representation."""
         return f"<Event id={self.id} title={self.title!r}>"
+
+
+class Registration(Base):
+    """An employee's registration (seat) for a specific event."""
+
+    __tablename__ = "registrations"
+    # The same e-mail address may only register once per event. The service layer checks
+    # this first for a friendly error, and the constraint guarantees it even under races.
+    __table_args__ = (
+        UniqueConstraint("event_id", "employee_email", name="uq_registrations_event_email"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    employee_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    employee_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    department: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    event: Mapped[Event] = relationship(back_populates="registrations")
+
+    def __repr__(self) -> str:
+        """Return a short developer-friendly representation."""
+        return f"<Registration id={self.id} event_id={self.event_id} email={self.employee_email!r}>"
+
+
+# Number of registrations for an event, computed by the database in the same query that
+# loads the event (a correlated sub-query). That avoids an extra query per event (N+1)
+# and works with async sessions, which cannot lazy-load.
+Event.registered_count = column_property(
+    select(func.count(Registration.id))
+    .where(Registration.event_id == Event.id)
+    .correlate_except(Registration)
+    .scalar_subquery()
+)
