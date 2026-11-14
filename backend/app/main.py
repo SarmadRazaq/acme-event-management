@@ -12,9 +12,11 @@ and returns the result. All business rules live in the service layer.
 """
 
 import logging
+from dataclasses import dataclass
+from datetime import date
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, Path, Request, status
+from fastapi import Depends, FastAPI, Path, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -73,6 +75,27 @@ EventId = Annotated[int, Path(gt=0, description="Numeric id of the event.", exam
 RegistrationId = Annotated[
     int, Path(gt=0, description="Numeric id of the registration.", examples=[1])
 ]
+
+
+@dataclass(frozen=True)
+class Pagination:
+    """Common ``skip`` / ``limit`` query parameters shared by every list endpoint."""
+
+    skip: int
+    limit: int
+
+
+def pagination_params(
+    skip: Annotated[int, Query(ge=0, description="Number of records to skip.")] = 0,
+    limit: Annotated[
+        int, Query(ge=1, le=100, description="Maximum number of records to return (1-100).")
+    ] = 10,
+) -> Pagination:
+    """Read and validate pagination query parameters (bad values give a 422)."""
+    return Pagination(skip=skip, limit=limit)
+
+
+PaginationDep = Annotated[Pagination, Depends(pagination_params)]
 
 
 def error_doc(description: str) -> dict[str, Any]:
@@ -203,14 +226,32 @@ async def create_event(
 
 @app.get(
     "/events",
-    response_model=list[schemas.EventRead],
+    response_model=schemas.Page[schemas.EventRead],
     tags=["Events"],
-    summary="List events",
-    description="Return all events ordered by date (soonest first).",
+    summary="List, search and filter events",
+    description="Return events ordered by date (soonest first), one page at a time.\n\n"
+    "* `skip` / `limit`: pagination, e.g. `?skip=0&limit=10`\n"
+    "* `title`: case-insensitive partial match, e.g. `?title=python`\n"
+    "* `date`: events on that calendar day (UTC), e.g. `?date=2026-11-20`\n\n"
+    "Filters can be combined with each other and with pagination.",
 )
-async def list_events(session: SessionDep) -> Any:
-    """Return all events, soonest first."""
-    return await services.list_events(session)
+async def list_events(
+    session: SessionDep,
+    page: PaginationDep,
+    title: Annotated[
+        str | None,
+        Query(max_length=200, description="Case-insensitive partial match on the title."),
+    ] = None,
+    on_date: Annotated[
+        date | None,
+        Query(alias="date", description="Only events on this day (YYYY-MM-DD, UTC)."),
+    ] = None,
+) -> Any:
+    """Return a page of events matching the optional filters."""
+    items, total = await services.list_events(
+        session, skip=page.skip, limit=page.limit, title=title, on_date=on_date
+    )
+    return schemas.Page(items=items, total=total, skip=page.skip, limit=page.limit)
 
 
 @app.get(
@@ -286,15 +327,18 @@ async def register_for_event(
 
 @app.get(
     "/events/{event_id}/registrations",
-    response_model=list[schemas.RegistrationRead],
+    response_model=schemas.Page[schemas.RegistrationRead],
     tags=["Registrations"],
     summary="List registrations for an event",
-    description="Return every registration for an event, oldest first.",
+    description="Return an event's registrations, oldest first, with `skip` / `limit` pagination.",
     responses=NOT_FOUND_EVENT,
 )
-async def list_registrations(event_id: EventId, session: SessionDep) -> Any:
-    """Return every registration for an event."""
-    return await services.list_registrations(session, event_id)
+async def list_registrations(event_id: EventId, session: SessionDep, page: PaginationDep) -> Any:
+    """Return a page of registrations for an event."""
+    items, total = await services.list_registrations(
+        session, event_id, skip=page.skip, limit=page.limit
+    )
+    return schemas.Page(items=items, total=total, skip=page.skip, limit=page.limit)
 
 
 @app.delete(
