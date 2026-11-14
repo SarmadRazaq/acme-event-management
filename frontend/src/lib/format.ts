@@ -22,3 +22,12 @@ export function toDateTimeLocal(iso: string): string {
 export const fromDateTimeLocal = (value: string) => new Date(value).toISOString()
 
 export const isPast = (iso: string) => new Date(iso).getTime() < Date.now()
+
+const dateFormatter = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
+
+/** Date only, e.g. "20 Nov 2026" (locale aware). */
+export const formatDate = (iso: string) => dateFormatter.format(new Date(iso))
+
+/** Time only, e.g. "15:00" (locale aware). */
+export const formatTime = (iso: string) => timeFormatter.format(new Date(iso))
