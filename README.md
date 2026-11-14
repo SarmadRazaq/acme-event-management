@@ -276,6 +276,13 @@ and merged through a pull request once CI passed:
 | #9 | `feature/docker-production` | Docker, nginx, gunicorn |
 | #10 | `feature/ci` | GitHub Actions |
 | #11 | `docs/readme-and-submission` | README, screenshots, AI docs |
+| #12 | `feature/ui-polish` | shadcn/ui components, dark mode, accessibility fixes |
+| #13 | `feature/event-theme-redesign` | event-site layout: hero, pill nav, image cards |
+| #14 | `feature/indigo-apricot-theme` | first colour scheme (indigo + apricot) |
+| #15 | `feature/bright-blue-theme` | purple replaced with bright blue |
+| #16 | `feature/light-soft-wash` | light "soft wash" design |
+| #17 | `feature/date-picker` | styled calendar date picker |
+| #18 | `docs/sync-after-ui-work` | docs and screenshots brought up to date |
 
 ---
 
@@ -290,6 +297,8 @@ Swagger UI with live requests and responses for **every endpoint**, both success
 | ![Filter + pagination](docs/screenshots/swagger/13-events-list-paginated-filtered-200.png) | ![Validation 422](docs/screenshots/swagger/10-events-create-invalid-422.png) |
 
 Frontend: [docs/screenshots/frontend](docs/screenshots/frontend)
+
+![Frontend: events page](docs/screenshots/frontend/home-light.png)
 
 ![Frontend: duplicate registration](docs/screenshots/frontend/03-duplicate-409.png)
 
