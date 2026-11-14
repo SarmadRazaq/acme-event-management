@@ -5,9 +5,15 @@ and the same code can run on a laptop, in CI, and in Docker by changing only the
 """
 
 from functools import lru_cache
+from typing import Literal, Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Fallback secret so the project runs out of the box on a laptop. It is refused in production.
+DEV_JWT_SECRET = "dev-only-insecure-secret-change-me"
+# Publicly known values (the default above and the placeholder in .env.example).
+INSECURE_JWT_SECRETS = {DEV_JWT_SECRET, "change-me-to-a-long-random-string"}
 
 
 class Settings(BaseSettings):
@@ -21,6 +27,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Acme Corp Event Management API"
     app_version: str = "1.0.0"
+    environment: Literal["development", "test", "production"] = "development"
 
     # Database ------------------------------------------------------------------
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/acme_events"
@@ -30,7 +37,7 @@ class Settings(BaseSettings):
     sql_echo: bool = False
 
     # Authentication --------------------------------------------------------------
-    jwt_secret_key: str = Field(default="dev-only-insecure-secret-change-me", min_length=16)
+    jwt_secret_key: str = Field(default=DEV_JWT_SECRET, min_length=16)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = Field(default=60, gt=0)
 
@@ -50,6 +57,16 @@ class Settings(BaseSettings):
             if value.startswith(prefix):
                 return "postgresql+asyncpg://" + value[len(prefix) :]
         return value
+
+    @model_validator(mode="after")
+    def require_real_secret_in_production(self) -> Self:
+        """Refuse to start in production with the publicly known development JWT secret.
+
+        Anyone who knows the secret can forge tokens, so this mistake must fail loudly.
+        """
+        if self.environment == "production" and self.jwt_secret_key in INSECURE_JWT_SECRETS:
+            raise ValueError("JWT_SECRET_KEY must be set to a strong random value in production.")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:
