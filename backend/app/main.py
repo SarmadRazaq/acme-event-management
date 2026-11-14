@@ -39,6 +39,12 @@ async def not_found_handler(_: Request, exc: services.NotFoundError) -> JSONResp
     return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": exc.message})
 
 
+@app.exception_handler(services.ConflictError)
+async def conflict_handler(_: Request, exc: services.ConflictError) -> JSONResponse:
+    """Turn a ``ConflictError`` (duplicate, full event, ...) into an HTTP 409 response."""
+    return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": exc.message})
+
+
 # --------------------------------------------------------------------------- health
 
 
@@ -111,3 +117,48 @@ async def update_event(
 async def delete_event(event_id: int, session: AsyncSession = Depends(get_session)) -> None:
     """Delete an event."""
     await services.delete_event(session, event_id)
+
+
+# --------------------------------------------------------------------------- registrations
+
+
+@app.post(
+    "/events/{event_id}/registrations",
+    response_model=schemas.RegistrationRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Registrations"],
+    summary="Register for an event",
+)
+async def register_for_event(
+    event_id: int,
+    payload: schemas.RegistrationCreate,
+    session: AsyncSession = Depends(get_session),
+) -> schemas.RegistrationRead:
+    """Register an employee for an event."""
+    return await services.register_for_event(session, event_id, payload)
+
+
+@app.get(
+    "/events/{event_id}/registrations",
+    response_model=list[schemas.RegistrationRead],
+    tags=["Registrations"],
+    summary="List registrations for an event",
+)
+async def list_registrations(
+    event_id: int, session: AsyncSession = Depends(get_session)
+) -> list[schemas.RegistrationRead]:
+    """Return every registration for an event."""
+    return await services.list_registrations(session, event_id)
+
+
+@app.delete(
+    "/registrations/{registration_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Registrations"],
+    summary="Cancel a registration",
+)
+async def cancel_registration(
+    registration_id: int, session: AsyncSession = Depends(get_session)
+) -> None:
+    """Cancel a registration."""
+    await services.cancel_registration(session, registration_id)
