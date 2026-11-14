@@ -7,7 +7,10 @@ Services never return HTTP responses. When something goes wrong they raise one o
 domain exceptions defined below, and ``main.py`` maps it to the right status code.
 """
 
-from sqlalchemy import func, select, text
+from datetime import UTC, date, datetime, time, timedelta
+from typing import Any
+
+from sqlalchemy import Select, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +38,32 @@ class ConflictError(ServiceError):
 
 class AuthenticationError(ServiceError):
     """Login failed because the e-mail or password is wrong (HTTP 401)."""
+
+
+# --------------------------------------------------------------------------- helpers
+
+
+async def _paginate(
+    session: AsyncSession, statement: Select[Any], skip: int, limit: int
+) -> tuple[list[Any], int]:
+    """Run ``statement`` for one page and also count every matching row.
+
+    Shared by all list endpoints so pagination behaves the same everywhere.
+
+    Returns:
+        A ``(items, total)`` tuple.
+    """
+    # Count over the filtered query without ORDER BY (ordering is irrelevant to a count).
+    total = await session.scalar(
+        select(func.count()).select_from(statement.order_by(None).subquery())
+    )
+    result = await session.scalars(statement.offset(skip).limit(limit))
+    return list(result.all()), total or 0
+
+
+def _escape_like(value: str) -> str:
+    """Escape SQL ``LIKE`` wildcards so user input such as ``100%`` is matched literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 # --------------------------------------------------------------------------- health
@@ -96,12 +125,38 @@ async def get_event(session: AsyncSession, event_id: int) -> models.Event:
     return event
 
 
-async def list_events(session: AsyncSession) -> list[models.Event]:
-    """Return all events, soonest first."""
-    result = await session.scalars(
-        select(models.Event).order_by(models.Event.event_date, models.Event.id)
-    )
-    return list(result.all())
+async def list_events(
+    session: AsyncSession,
+    *,
+    skip: int = 0,
+    limit: int = 10,
+    title: str | None = None,
+    on_date: date | None = None,
+) -> tuple[list[models.Event], int]:
+    """Return one page of events (soonest first) and the total number of matches.
+
+    Args:
+        session: Database session.
+        skip: Number of events to skip (offset).
+        limit: Maximum number of events to return.
+        title: Optional case-insensitive partial match on the title.
+        on_date: Optional calendar day (UTC); only events on that day are returned.
+    """
+    statement = select(models.Event).order_by(models.Event.event_date, models.Event.id)
+
+    if title:
+        pattern = f"%{_escape_like(title.strip())}%"
+        statement = statement.where(models.Event.title.ilike(pattern, escape="\\"))
+    if on_date is not None:
+        # A half-open range [day 00:00, next day 00:00) is used instead of casting the
+        # column to a date, so the index on ``event_date`` can still be used.
+        start = datetime.combine(on_date, time.min, tzinfo=UTC)
+        statement = statement.where(
+            models.Event.event_date >= start,
+            models.Event.event_date < start + timedelta(days=1),
+        )
+
+    return await _paginate(session, statement, skip, limit)
 
 
 async def create_event(
@@ -150,15 +205,21 @@ async def delete_event(session: AsyncSession, event_id: int) -> None:
 # --------------------------------------------------------------------------- registrations
 
 
-async def list_registrations(session: AsyncSession, event_id: int) -> list[models.Registration]:
-    """Return all registrations for an event, oldest first (404 if the event is missing)."""
+async def list_registrations(
+    session: AsyncSession, event_id: int, *, skip: int = 0, limit: int = 10
+) -> tuple[list[models.Registration], int]:
+    """Return one page of an event's registrations (oldest first) and the total count.
+
+    Raises:
+        NotFoundError: If the event does not exist.
+    """
     await get_event(session, event_id)
-    result = await session.scalars(
+    statement = (
         select(models.Registration)
         .where(models.Registration.event_id == event_id)
         .order_by(models.Registration.created_at, models.Registration.id)
     )
-    return list(result.all())
+    return await _paginate(session, statement, skip, limit)
 
 
 async def register_for_event(
