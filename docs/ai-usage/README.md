@@ -16,7 +16,8 @@ AI usage policy asks for.
 
 - Default Claude Code settings. Plan mode was used for the first step, so the plan could be reviewed before any code was written.
 - The assistant could use the shell (git, `gh`, Docker, Python, npm) on my machine.
-- No custom system prompts, fine-tuning or extra plugins were used for the code.
+- No custom system prompts or fine-tuning. For the frontend UI work, these agent skills were installed:
+  `find-skills`, `web-design-guidelines` (Vercel) and `shadcn`. They provide design and component guidance only.
 
 ## Prompts
 
@@ -34,6 +35,41 @@ AI usage policy asks for.
    - Repository name → `acme-event-management` (public, `main` as the stable branch)
    - Frontend stack → React + Vite + TypeScript, TanStack Query + Zustand
    - Merge strategy → one GitHub pull request per feature branch
+
+4. **Follow-up prompts** after the backend, frontend, Docker and CI were finished, in order
+   (my wording, typos kept):
+   1. > give me the commands to run it
+   2. > /find-skills for UI improvements
+
+      The assistant suggested two design skills (`web-design-guidelines`, `shadcn`).
+   3. > yes
+
+      This installed them, audited the frontend against the Web Interface Guidelines and moved
+      it to shadcn/ui (PR #12).
+   4. > make something like this design wise
+
+      I attached a screenshot of an event-website template. The assistant adapted its layout
+      without copying its branding or images (PR #13).
+   5. > Change the color scheme of the website. Suggest me color schemes. you can check the
+      > websites of this niche online and then tell me
+
+      The assistant researched event-site colour guidance (Cvent, Toptal, Event Planner Expo) and
+      offered four palettes. I picked **Indigo & Apricot** (PR #14).
+   6. > remove this purple color use some bright color from references
+
+      Indigo was replaced with bright blue, keeping the apricot buttons (PR #15).
+   7. > I want it to be light. Check reference websites like these and then tell me
+
+      The assistant screenshotted Luma, Eventbrite, Meetup, Bizzabo, Eventzilla and Partiful and
+      offered three light styles. I picked **Soft wash, like Luma** (PR #16).
+   8. > improve this calendar too
+
+      I attached a screenshot of the browser's native date popup. It was replaced with a styled
+      shadcn calendar (PR #17).
+   9. > does everything aligns with the documents?
+
+      The assistant re-checked the brief and rubric against the repo. It updated this prompt
+      list, the README's Git workflow table and the outdated frontend screenshots (PR #18).
 
 ## Chat history
 
