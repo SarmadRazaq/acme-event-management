@@ -7,10 +7,11 @@ Each resource has separate schemas for its different jobs:
 * ``*Read``: what the API returns (includes server-generated fields such as ``id``)
 """
 
-from datetime import datetime
-from typing import Annotated
+from datetime import UTC, datetime
+from typing import Annotated, Self
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     EmailStr,
@@ -18,7 +19,14 @@ from pydantic import (
     StringConstraints,
     computed_field,
     field_validator,
+    model_validator,
 )
+
+
+def _assume_utc(value: datetime) -> datetime:
+    """Treat a datetime without a timezone ("naive") as UTC so all stored dates are comparable."""
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value
+
 
 # Reusable constrained string types. ``strip_whitespace`` turns "   " into "", which then
 # fails ``min_length=1``, so blank titles are rejected with a 422.
@@ -28,6 +36,13 @@ Description = Annotated[str, StringConstraints(strip_whitespace=True, max_length
 PersonName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 Department = Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)]
 Capacity = Annotated[int, Field(gt=0, le=100_000, description="Maximum number of attendees.")]
+EventDate = Annotated[datetime, AfterValidator(_assume_utc)]
+
+
+class ErrorResponse(BaseModel):
+    """Body of every error response produced by the API (except 422 validation errors)."""
+
+    detail: str = Field(examples=["Event with id 42 not found."])
 
 
 class HealthResponse(BaseModel):
@@ -45,7 +60,9 @@ class EventBase(BaseModel):
 
     title: Title = Field(description="Short name of the event.")
     description: Description | None = Field(default=None, description="Longer description.")
-    event_date: datetime = Field(description="Date and time of the event (ISO 8601).")
+    event_date: EventDate = Field(
+        description="Date and time of the event (ISO 8601). Times without a timezone are UTC."
+    )
     location: Location = Field(description="Where the event takes place.")
     max_capacity: Capacity
 
@@ -77,9 +94,23 @@ class EventUpdate(BaseModel):
 
     title: Title | None = None
     description: Description | None = None
-    event_date: datetime | None = None
+    event_date: EventDate | None = None
     location: Location | None = None
     max_capacity: Capacity | None = None
+
+    @model_validator(mode="after")
+    def check_fields(self) -> Self:
+        """Reject empty updates and ``null`` for fields that the database requires.
+
+        Only ``description`` may be cleared with ``null``; for the other fields ``null``
+        would break the NOT NULL columns, so it is reported as a 422 validation error.
+        """
+        if not self.model_fields_set:
+            raise ValueError("Provide at least one field to update.")
+        for field in ("title", "event_date", "location", "max_capacity"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"'{field}' cannot be null.")
+        return self
 
 
 class EventRead(EventBase):
