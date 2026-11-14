@@ -57,7 +57,7 @@ export function EventCard({ event }: { event: Event }) {
             {event.title}
           </Link>
         </h2>
-        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-brand-pink">
+        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-brand-accent-ink">
           <MapPinIcon className="size-3.5 shrink-0" aria-hidden />
           <span className="truncate">{event.location}</span>
         </p>

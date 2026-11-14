@@ -64,7 +64,7 @@ export function EventDetailPage() {
           </span>
           {facts.map(({ icon: Icon, label }) => (
             <span key={label} className="flex min-w-0 items-center gap-1.5">
-              <Icon className="size-4 shrink-0 text-brand-pink" aria-hidden />
+              <Icon className="size-4 shrink-0 text-brand-accent" aria-hidden />
               <span className="truncate">{label}</span>
             </span>
           ))}
