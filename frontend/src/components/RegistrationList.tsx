@@ -1,9 +1,16 @@
+import { UsersIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { useCancelRegistration, useRegistrationsQuery } from '../hooks/useEvents'
-import { formatDateTime } from '../lib/format'
-import { useIsAuthenticated } from '../store/authStore'
-import { EmptyState, ErrorState, Spinner } from './Feedback'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCancelRegistration, useRegistrationsQuery } from '@/hooks/useEvents'
+import { formatDateTime } from '@/lib/format'
+import { useIsAuthenticated } from '@/store/authStore'
+
+import { ConfirmDialog } from './ConfirmDialog'
+import { EmptyState, ErrorState } from './Feedback'
 import { Pagination } from './Pagination'
 
 const PAGE_SIZE = 10
@@ -14,65 +21,69 @@ export function RegistrationList({ eventId }: { eventId: number }) {
   const query = useRegistrationsQuery(eventId, skip, PAGE_SIZE)
   const cancel = useCancelRegistration(eventId)
   const canCancel = useIsAuthenticated()
-  // Two-step "Cancel → Confirm" instead of a blocking browser confirm() dialog.
-  const [confirmId, setConfirmId] = useState<number | null>(null)
 
-  if (query.isPending) return <Spinner label="Loading attendees…" />
+  if (query.isPending) {
+    return (
+      <Card className="gap-0 divide-y py-0" aria-busy="true" aria-label="Loading attendees">
+        {[0, 1, 2].map((key) => (
+          <div key={key} className="flex flex-col gap-2 px-5 py-4">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+        ))}
+      </Card>
+    )
+  }
   if (query.isError) return <ErrorState error={query.error} onRetry={() => query.refetch()} />
 
   const { items, total } = query.data
   if (total === 0) {
-    return <EmptyState title="No registrations yet">Be the first to sign up!</EmptyState>
+    return <EmptyState icon={UsersIcon} title="No Registrations Yet" description="Be the first to sign up!" />
   }
 
   return (
-    <div className="space-y-3">
-      <ul className="card divide-y divide-slate-100">
-        {items.map((registration) => (
-          <li key={registration.id} className="flex items-center justify-between gap-4 px-5 py-3">
-            <div className="min-w-0">
-              <p className="truncate font-medium text-slate-900">{registration.employee_name}</p>
-              <p className="truncate text-sm text-slate-500">
-                {registration.employee_email}
-                {registration.department && ` · ${registration.department}`}
-              </p>
-              <p className="text-xs text-slate-400">
-                Registered {formatDateTime(registration.created_at)}
-              </p>
-            </div>
-            {canCancel &&
-              (confirmId === registration.id ? (
-                <div className="flex shrink-0 gap-2">
-                  <button
-                    type="button"
-                    className="btn-danger px-3 py-1.5"
-                    disabled={cancel.isPending}
-                    onClick={() =>
-                      cancel.mutate(registration.id, { onSettled: () => setConfirmId(null) })
-                    }
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary px-3 py-1.5"
-                    onClick={() => setConfirmId(null)}
-                  >
-                    Keep
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="btn-secondary shrink-0 px-3 py-1.5 text-rose-600"
-                  onClick={() => setConfirmId(registration.id)}
-                >
-                  Cancel
-                </button>
-              ))}
-          </li>
-        ))}
-      </ul>
+    <div className="flex flex-col gap-3">
+      <Card className="gap-0 py-0">
+        <ul className="divide-y">
+          {items.map((registration) => (
+            <li key={registration.id} className="flex items-center justify-between gap-4 px-5 py-3">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <p className="flex min-w-0 items-center gap-2 font-medium">
+                  <span className="truncate">{registration.employee_name}</span>
+                  {registration.department && (
+                    <Badge variant="secondary" className="shrink-0">
+                      {registration.department}
+                    </Badge>
+                  )}
+                </p>
+                <p className="truncate text-sm text-muted-foreground">{registration.employee_email}</p>
+                <p className="text-xs text-muted-foreground">
+                  Registered {formatDateTime(registration.created_at)}
+                </p>
+              </div>
+              {canCancel && (
+                <ConfirmDialog
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-destructive"
+                      disabled={cancel.isPending}
+                    >
+                      <XIcon data-icon="inline-start" />
+                      Cancel
+                    </Button>
+                  }
+                  title="Cancel This Registration?"
+                  description={`${registration.employee_name} will lose their seat, and someone else can take it.`}
+                  confirmLabel="Cancel Registration"
+                  onConfirm={() => cancel.mutate(registration.id)}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      </Card>
       <Pagination skip={skip} limit={PAGE_SIZE} total={total} onChange={setSkip} />
     </div>
   )
