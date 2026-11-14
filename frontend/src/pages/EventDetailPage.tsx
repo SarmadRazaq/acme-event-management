@@ -58,18 +58,18 @@ export function EventDetailPage() {
   return (
     <>
       <PageHero title={event.title} crumbs={[{ label: 'Events', to: '/' }, { label: event.title }]}>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-navy-foreground/80">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-muted-foreground">
           <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold tracking-wide text-primary-foreground uppercase">
             {category.label}
           </span>
           {facts.map(({ icon: Icon, label }) => (
             <span key={label} className="flex min-w-0 items-center gap-1.5">
-              <Icon className="size-4 shrink-0 text-brand-accent" aria-hidden />
+              <Icon className="size-4 shrink-0 text-primary" aria-hidden />
               <span className="truncate">{label}</span>
             </span>
           ))}
           {isPast(event.event_date) && (
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase">Past event</span>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground uppercase">Past event</span>
           )}
         </div>
       </PageHero>
