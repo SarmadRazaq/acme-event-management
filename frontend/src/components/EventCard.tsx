@@ -19,12 +19,12 @@ export function EventCard({ event }: { event: Event }) {
       <EventArtwork
         id={event.id}
         title={event.title}
-        className="aspect-[4/3] rounded-3xl shadow-lg shadow-navy/15 transition-[transform,box-shadow] duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-primary/20 motion-reduce:transform-none"
+        className="aspect-[4/3] rounded-3xl shadow-md shadow-navy/10 transition-[transform,box-shadow] duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-primary/20 motion-reduce:transform-none"
       >
         <span
           className={cn(
             'absolute top-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase backdrop-blur tabular-nums',
-            full ? 'bg-destructive text-white' : 'bg-white/90 text-navy',
+            full ? 'bg-destructive text-white' : 'bg-card/90 text-foreground',
           )}
         >
           {full

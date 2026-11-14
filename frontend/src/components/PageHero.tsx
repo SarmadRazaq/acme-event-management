@@ -20,35 +20,27 @@ interface PageHeroProps {
 }
 
 /**
- * Dark navy page header with spotlight glows, a large title and a breadcrumb trail.
- * The floating navigation pill (see Layout) sits on top of it.
+ * Light page header: a soft pale-blue to peach wash that fades into the page, with a large
+ * title and a breadcrumb trail. The floating navigation pill (see Layout) sits on top of it.
  */
 export function PageHero({ title, crumbs = [], children, size = 'default' }: PageHeroProps) {
   return (
     <section
       className={cn(
-        'relative isolate overflow-hidden bg-navy text-navy-foreground',
+        'relative isolate overflow-hidden text-foreground',
         size === 'lg' ? 'pt-40 pb-28' : 'pt-36 pb-16',
       )}
     >
-      {/* Spotlights */}
+      {/* Soft colour wash: blue from the top-left, peach from the right, fading into the page. */}
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
         style={{
           backgroundImage: [
-            'radial-gradient(40% 70% at 85% 0%, oklch(0.6 0.2 255 / 0.6), transparent 70%)',
-            'radial-gradient(35% 60% at 10% 10%, oklch(0.75 0.14 55 / 0.3), transparent 70%)',
-            'radial-gradient(60% 50% at 50% 120%, oklch(0.45 0.17 258 / 0.6), transparent 70%)',
+            'radial-gradient(55% 90% at 12% 0%, var(--wash-from), transparent 70%)',
+            'radial-gradient(45% 80% at 92% 10%, var(--wash-to), transparent 70%)',
+            'linear-gradient(180deg, color-mix(in oklch, var(--wash-from) 45%, transparent), transparent)',
           ].join(','),
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 opacity-[0.07]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, white 1px, transparent 1.5px)',
-          backgroundSize: '22px 22px',
         }}
       />
 
@@ -57,9 +49,9 @@ export function PageHero({ title, crumbs = [], children, size = 'default' }: Pag
           {title}
         </h1>
         <nav aria-label="Breadcrumb">
-          <ol className="flex flex-wrap items-center gap-1.5 text-xs font-semibold tracking-wider text-navy-foreground/70 uppercase">
+          <ol className="flex flex-wrap items-center gap-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             <li>
-              <Link to="/" className="hover:text-white">
+              <Link to="/" className="hover:text-foreground">
                 Home
               </Link>
             </li>
@@ -71,11 +63,11 @@ export function PageHero({ title, crumbs = [], children, size = 'default' }: Pag
               >
                 <ChevronRightIcon className="size-3.5 shrink-0" aria-hidden />
                 {crumb.to ? (
-                  <Link to={crumb.to} className="truncate hover:text-white">
+                  <Link to={crumb.to} className="truncate hover:text-foreground">
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className="max-w-[40ch] truncate text-brand-accent">{crumb.label}</span>
+                  <span className="max-w-[40ch] truncate text-primary">{crumb.label}</span>
                 )}
               </li>
             ))}
