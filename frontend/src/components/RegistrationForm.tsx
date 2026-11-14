@@ -1,9 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
-import { useRegisterForEvent } from '../hooks/useEvents'
-import { type RegistrationFormValues, registrationFormSchema } from '../lib/schemas'
-import { useAuthStore } from '../store/authStore'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { useRegisterForEvent } from '@/hooks/useEvents'
+import { type RegistrationFormValues, registrationFormSchema } from '@/lib/schemas'
+import { useAuthStore } from '@/store/authStore'
+
 import { FormError } from './Feedback'
 
 /**
@@ -36,50 +42,56 @@ export function RegistrationForm({ eventId, isFull }: { eventId: number; isFull:
   )
 
   return (
-    <form onSubmit={submit} noValidate className="card space-y-4 p-5">
-      <div>
-        <h2 className="font-semibold text-slate-900">Register for this event</h2>
-        <p className="text-sm text-slate-500">Each employee can register once.</p>
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2>Register for This Event</h2>
+        </CardTitle>
+        <CardDescription>
+          {isFull ? 'This event is full. New registrations will be rejected.' : 'Each employee can register once.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} noValidate>
+          <FieldGroup>
+            <Field data-invalid={Boolean(errors.employee_name)}>
+              <FieldLabel htmlFor="employee_name">Full Name</FieldLabel>
+              <Input
+                id="employee_name"
+                autoComplete="name"
+                aria-invalid={Boolean(errors.employee_name)}
+                {...register('employee_name')}
+              />
+              <FieldError errors={[errors.employee_name]} />
+            </Field>
+            <Field data-invalid={Boolean(errors.employee_email)}>
+              <FieldLabel htmlFor="employee_email">Work E-mail</FieldLabel>
+              <Input
+                id="employee_email"
+                type="email"
+                autoComplete="email"
+                spellCheck={false}
+                aria-invalid={Boolean(errors.employee_email)}
+                {...register('employee_email')}
+              />
+              <FieldError errors={[errors.employee_email]} />
+            </Field>
+            <Field data-invalid={Boolean(errors.department)}>
+              <FieldLabel htmlFor="department">Department</FieldLabel>
+              <Input id="department" autoComplete="organization-title" {...register('department')} />
+              <FieldDescription>Optional.</FieldDescription>
+              <FieldError errors={[errors.department]} />
+            </Field>
 
-      <div>
-        <label htmlFor="employee_name" className="label">
-          Full name
-        </label>
-        <input
-          id="employee_name"
-          className="input"
-          aria-invalid={Boolean(errors.employee_name)}
-          {...register('employee_name')}
-        />
-        {errors.employee_name && <p className="field-error">{errors.employee_name.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="employee_email" className="label">
-          Work e-mail
-        </label>
-        <input
-          id="employee_email"
-          type="email"
-          className="input"
-          aria-invalid={Boolean(errors.employee_email)}
-          {...register('employee_email')}
-        />
-        {errors.employee_email && <p className="field-error">{errors.employee_email.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="department" className="label">
-          Department <span className="font-normal text-slate-400">(optional)</span>
-        </label>
-        <input id="department" className="input" {...register('department')} />
-        {errors.department && <p className="field-error">{errors.department.message}</p>}
-      </div>
+            <FormError error={mutation.error} />
 
-      <FormError error={mutation.error} />
-
-      <button type="submit" className="btn-primary w-full" disabled={mutation.isPending}>
-        {mutation.isPending ? 'Registering…' : isFull ? 'Try to register (event is full)' : 'Register'}
-      </button>
-    </form>
+            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+              {mutation.isPending && <Spinner data-icon="inline-start" />}
+              {mutation.isPending ? 'Registering…' : isFull ? 'Try to Register' : 'Register'}
+            </Button>
+          </FieldGroup>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

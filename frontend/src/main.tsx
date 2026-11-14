@@ -1,11 +1,12 @@
+import '@fontsource-variable/geist'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
-import { Toaster } from 'sonner'
 
 import App from './App'
+import { Toaster } from './components/ui/sonner'
 import './index.css'
 import { queryClient } from './lib/queryClient'
 

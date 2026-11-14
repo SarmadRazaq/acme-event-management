@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router'
 
-import { Spinner } from './components/Feedback'
+import { Loading } from './components/Feedback'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -25,7 +25,7 @@ const NotFoundPage = lazy(() =>
 /** Route table. Pages that change data require a logged-in user. */
 export default function App() {
   return (
-    <Suspense fallback={<Spinner />}>
+    <Suspense fallback={<Loading />}>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<EventsPage />} />
