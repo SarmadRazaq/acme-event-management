@@ -62,7 +62,7 @@ export function EventsPage() {
   return (
     <>
       <PageHero title="Upcoming Events" crumbs={[{ label: 'Events' }]} size="lg">
-        <p className="max-w-xl text-navy-foreground/75">
+        <p className="max-w-xl text-muted-foreground">
           Product launches, workshops, team-building and conferences at{' '}
           <span translate="no">Acme Corp</span>. Find one and save your seat.
         </p>

@@ -35,9 +35,12 @@
 @theme inline {
   --font-heading: 'Plus Jakarta Sans Variable', sans-serif;
   --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
-  /* Navy, Bright Blue & Apricot brand: navy header, bright-blue primary, burnt-apricot calls to action.
+  /* Light "soft wash" theme: off-white page, pale-blue to peach hero wash, bright-blue primary,
+     burnt-apricot calls to action.
      `brand-accent-ink` is the darker apricot used for text on light surfaces (WCAG AA). */
   --color-navy: var(--navy);
+  --color-wash-from: var(--wash-from);
+  --color-wash-to: var(--wash-to);
   --color-navy-foreground: var(--navy-foreground);
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
@@ -83,28 +86,30 @@
 }
 
 :root {
-  --background: oklch(0.978 0.008 80);
-  --foreground: oklch(0.23 0.05 255);
+  --background: oklch(0.985 0.004 250);
+  --foreground: oklch(0.22 0.03 255);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.05 255);
+  --card-foreground: oklch(0.22 0.03 255);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.05 255);
+  --popover-foreground: oklch(0.22 0.03 255);
   --navy: oklch(0.26 0.075 255);
+  --wash-from: oklch(0.9 0.055 250);
+  --wash-to: oklch(0.94 0.045 60);
   --navy-foreground: oklch(0.97 0.012 80);
   --brand-accent: oklch(0.78 0.13 60);
   --brand-accent-foreground: oklch(0.257 0.09 255);
   --brand-accent-ink: oklch(0.53 0.14 48);
   --primary: oklch(0.546 0.215 263);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.955 0.012 80);
+  --secondary: oklch(0.965 0.006 250);
   --secondary-foreground: oklch(0.257 0.09 255);
-  --muted: oklch(0.955 0.012 80);
-  --muted-foreground: oklch(0.5 0.03 255);
+  --muted: oklch(0.965 0.006 250);
+  --muted-foreground: oklch(0.5 0.025 255);
   --accent: oklch(0.95 0.025 255);
   --accent-foreground: oklch(0.257 0.09 255);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.015 80);
-  --input: oklch(0.89 0.015 80);
+  --border: oklch(0.92 0.008 250);
+  --input: oklch(0.9 0.01 250);
   --ring: oklch(0.623 0.188 260);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -130,6 +135,8 @@
   --popover: oklch(0.215 0.045 255);
   --popover-foreground: oklch(0.97 0.012 80);
   --navy: oklch(0.135 0.05 255);
+  --wash-from: oklch(0.3 0.085 255);
+  --wash-to: oklch(0.27 0.05 50);
   --navy-foreground: oklch(0.97 0.012 80);
   --brand-accent: oklch(0.8 0.13 62);
   --brand-accent-foreground: oklch(0.2 0.07 255);
