@@ -18,7 +18,7 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
-        // Project addition: brand gradient call-to-action (violet -> pink).
+        // Project addition: brand gradient call-to-action (apricot).
         gradient:
           "bg-linear-to-r from-brand-accent to-[oklch(0.84_0.11_75)] text-brand-accent-foreground shadow-lg shadow-brand-accent/30 hover:brightness-105",
       },

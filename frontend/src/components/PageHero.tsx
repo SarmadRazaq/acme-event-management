@@ -37,9 +37,9 @@ export function PageHero({ title, crumbs = [], children, size = 'default' }: Pag
         className="absolute inset-0 -z-10"
         style={{
           backgroundImage: [
-            'radial-gradient(40% 70% at 85% 0%, oklch(0.55 0.24 277 / 0.6), transparent 70%)',
+            'radial-gradient(40% 70% at 85% 0%, oklch(0.6 0.2 255 / 0.6), transparent 70%)',
             'radial-gradient(35% 60% at 10% 10%, oklch(0.75 0.14 55 / 0.3), transparent 70%)',
-            'radial-gradient(60% 50% at 50% 120%, oklch(0.45 0.2 277 / 0.6), transparent 70%)',
+            'radial-gradient(60% 50% at 50% 120%, oklch(0.45 0.17 258 / 0.6), transparent 70%)',
           ].join(','),
         }}
       />
