@@ -8,7 +8,7 @@ Each resource has separate schemas for its different jobs:
 """
 
 from datetime import UTC, datetime
-from typing import Annotated, Self
+from typing import Annotated, Generic, Self, TypeVar
 
 from pydantic import (
     AfterValidator,
@@ -37,6 +37,18 @@ PersonName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=
 Department = Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)]
 Capacity = Annotated[int, Field(gt=0, le=100_000, description="Maximum number of attendees.")]
 EventDate = Annotated[datetime, AfterValidator(_assume_utc)]
+
+
+ItemT = TypeVar("ItemT")
+
+
+class Page(BaseModel, Generic[ItemT]):
+    """A page of results plus the information needed to fetch the next one."""
+
+    items: list[ItemT]
+    total: int = Field(description="Total number of matching records (across all pages).")
+    skip: int = Field(description="Number of records skipped.")
+    limit: int = Field(description="Maximum number of records in this page.")
 
 
 class ErrorResponse(BaseModel):
