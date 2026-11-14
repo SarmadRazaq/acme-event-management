@@ -1,0 +1,26 @@
+[project]
+name = "acme-event-management-api"
+version = "1.0.0"
+description = "Corporate Event Management API for Acme Corp (FastAPI + PostgreSQL)."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, pep8-naming, bugbear, pyupgrade, docstrings
+select = ["E", "W", "F", "I", "N", "B", "UP", "D"]
+ignore = ["D203", "D213", "B008"]  # B008: FastAPI's Depends() in defaults is idiomatic
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+"alembic/*" = ["D"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+addopts = "-ra"
