@@ -20,7 +20,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         // Project addition: brand gradient call-to-action (violet -> pink).
         gradient:
-          "bg-linear-to-r from-primary to-brand-pink text-white shadow-lg shadow-primary/25 hover:brightness-110",
+          "bg-linear-to-r from-brand-accent to-[oklch(0.84_0.11_75)] text-brand-accent-foreground shadow-lg shadow-brand-accent/30 hover:brightness-105",
       },
       size: {
         default:
