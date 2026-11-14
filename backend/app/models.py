@@ -33,6 +33,25 @@ class TimestampMixin:
     )
 
 
+class User(Base):
+    """An Acme Corp employee account that can log in and manage events."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    full_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    # Only the Argon2 hash is stored, never the plain-text password.
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    def __repr__(self) -> str:
+        """Return a short developer-friendly representation."""
+        return f"<User id={self.id} email={self.email!r}>"
+
+
 class Event(TimestampMixin, Base):
     """A corporate event (product launch, workshop, team-building, conference, ...)."""
 
@@ -49,6 +68,10 @@ class Event(TimestampMixin, Base):
     )
     location: Mapped[str] = mapped_column(String(200), nullable=False)
     max_capacity: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Who created the event. If that account is deleted the event is kept (SET NULL).
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
 
     # One event has many registrations. ``passive_deletes`` lets PostgreSQL's
     # ON DELETE CASCADE remove them, instead of SQLAlchemy loading each one first.
