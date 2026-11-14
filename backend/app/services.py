@@ -11,7 +11,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import models, schemas
+from app import models, schemas, security
 
 # --------------------------------------------------------------------------- exceptions
 
@@ -33,6 +33,10 @@ class ConflictError(ServiceError):
     """The request conflicts with the current state, e.g. a duplicate or full event (HTTP 409)."""
 
 
+class AuthenticationError(ServiceError):
+    """Login failed because the e-mail or password is wrong (HTTP 401)."""
+
+
 # --------------------------------------------------------------------------- health
 
 
@@ -43,6 +47,42 @@ async def check_database(session: AsyncSession) -> bool:
     except Exception:  # any failure at all means the database is unhealthy
         return False
     return True
+
+
+# --------------------------------------------------------------------------- users & auth
+
+
+async def register_user(session: AsyncSession, data: schemas.UserCreate) -> models.User:
+    """Create a user account with a hashed password (409 if the e-mail is taken)."""
+    existing = await session.scalar(select(models.User.id).where(models.User.email == data.email))
+    if existing is not None:
+        raise ConflictError(f"An account with e-mail {data.email} already exists.")
+
+    user = models.User(
+        email=data.email,
+        full_name=data.full_name,
+        hashed_password=security.hash_password(data.password),
+    )
+    session.add(user)
+    try:
+        await session.commit()
+    except IntegrityError as exc:  # two sign-ups with the same e-mail at the same moment
+        await session.rollback()
+        raise ConflictError(f"An account with e-mail {data.email} already exists.") from exc
+    await session.refresh(user)
+    return user
+
+
+async def authenticate_user(session: AsyncSession, email: str, password: str) -> schemas.Token:
+    """Check the credentials and return a JWT access token.
+
+    The same error is raised for an unknown e-mail and for a wrong password, so an
+    attacker cannot use the login form to find out which e-mails have accounts.
+    """
+    user = await session.scalar(select(models.User).where(models.User.email == email.lower()))
+    if user is None or not security.verify_password(password, user.hashed_password):
+        raise AuthenticationError("Incorrect e-mail or password.")
+    return schemas.Token(access_token=security.create_access_token(user.id))
 
 
 # --------------------------------------------------------------------------- events
@@ -64,9 +104,11 @@ async def list_events(session: AsyncSession) -> list[models.Event]:
     return list(result.all())
 
 
-async def create_event(session: AsyncSession, data: schemas.EventCreate) -> models.Event:
-    """Create and persist a new event from validated ``data``."""
-    event = models.Event(**data.model_dump())
+async def create_event(
+    session: AsyncSession, data: schemas.EventCreate, created_by: models.User
+) -> models.Event:
+    """Create and persist a new event from validated ``data``, owned by ``created_by``."""
+    event = models.Event(**data.model_dump(), created_by_id=created_by.id)
     session.add(event)
     await session.commit()
     # Reload server-generated columns (id, created_at, updated_at).
