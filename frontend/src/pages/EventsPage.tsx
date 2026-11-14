@@ -4,11 +4,11 @@ import { Link, useSearchParams } from 'react-router'
 
 import { EventCard } from '@/components/EventCard'
 import { EmptyState, ErrorState } from '@/components/Feedback'
+import { PageHero } from '@/components/PageHero'
 import { Pagination } from '@/components/Pagination'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEventsQuery } from '@/hooks/useEvents'
 import { cn } from '@/lib/utils'
@@ -60,109 +60,126 @@ export function EventsPage() {
   const hasFilters = Boolean(title || date)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-balance">Upcoming Events</h1>
-          <p className="text-sm text-muted-foreground">
-            Product launches, workshops, team-building and conferences at <span translate="no">Acme Corp</span>.
-          </p>
-        </div>
+    <>
+      <PageHero title="Upcoming Events" crumbs={[{ label: 'Events' }]} size="lg">
+        <p className="max-w-xl text-navy-foreground/75">
+          Product launches, workshops, team-building and conferences at{' '}
+          <span translate="no">Acme Corp</span>. Find one and save your seat.
+        </p>
         {isAuthenticated && (
-          <Button asChild>
+          <Button variant="gradient" size="pill" asChild className="mt-2 self-start">
             <Link to="/events/new">
               <PlusIcon data-icon="inline-start" />
               New Event
             </Link>
           </Button>
         )}
-      </div>
+      </PageHero>
 
-      <Card className="py-4">
-        <CardContent>
-          <form onSubmit={applySearch} role="search" className="flex flex-wrap items-end gap-3">
-            <Field className="min-w-48 flex-1">
-              <FieldLabel htmlFor="search-title">Search by Title</FieldLabel>
-              <Input
-                id="search-title"
-                type="search"
-                placeholder="e.g. Python…"
-                autoComplete="off"
-                spellCheck={false}
-                value={titleDraft}
-                onChange={(e) => setTitleDraft(e.target.value)}
-              />
-            </Field>
-            <Field className="w-auto">
-              <FieldLabel htmlFor="search-date">Date</FieldLabel>
-              <Input
-                id="search-date"
-                type="date"
-                value={date}
-                onChange={(e) => updateParams({ date: e.target.value, skip: '' })}
-              />
-            </Field>
-            <Button type="submit">
-              <SearchIcon data-icon="inline-start" />
-              Search
-            </Button>
+      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4">
+        {/* Search bar overlapping the bottom of the hero */}
+        <form
+          onSubmit={applySearch}
+          role="search"
+          className="relative z-10 -mt-10 flex flex-col gap-3 rounded-3xl bg-card p-3 shadow-xl shadow-navy/10 ring-1 ring-border sm:flex-row sm:items-center sm:rounded-full sm:pl-6"
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <SearchIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <Label htmlFor="search-title" className="sr-only">
+              Search by Title
+            </Label>
+            <Input
+              id="search-title"
+              type="search"
+              placeholder="Search events by title…"
+              autoComplete="off"
+              spellCheck={false}
+              className="h-10 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="search-date" className="sr-only">
+              Date
+            </Label>
+            <Input
+              id="search-date"
+              type="date"
+              className="h-10 w-auto rounded-full"
+              value={date}
+              onChange={(e) => updateParams({ date: e.target.value, skip: '' })}
+            />
             {hasFilters && (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
+                size="icon-lg"
+                className="rounded-full"
+                aria-label="Clear filters"
                 onClick={() => {
                   setTitleDraft('')
                   setParams(new URLSearchParams())
                 }}
               >
-                <XIcon data-icon="inline-start" />
-                Clear
+                <XIcon />
               </Button>
             )}
-          </form>
-        </CardContent>
-      </Card>
+            <Button type="submit" variant="gradient" size="pill">
+              Search
+            </Button>
+          </div>
+        </form>
 
-      {query.isPending ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading events">
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} className="h-52 rounded-xl" />
-          ))}
-        </div>
-      ) : query.isError ? (
-        <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : query.data.total === 0 ? (
-        <EmptyState
-          icon={CalendarSearchIcon}
-          title={hasFilters ? 'No Events Match Your Filters' : 'No Events Yet'}
-          description={
-            hasFilters
-              ? 'Try a different title or date.'
-              : isAuthenticated
-                ? 'Create the first one with “New Event”.'
-                : 'Log in to create one.'
-          }
-        />
-      ) : (
-        <>
+        {query.isPending ? (
           <div
-            className={cn(
-              'grid gap-5 transition-opacity sm:grid-cols-2 lg:grid-cols-3',
-              query.isPlaceholderData && 'opacity-60',
-            )}
+            className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+            aria-busy="true"
+            aria-label="Loading events"
           >
-            {query.data.items.map((event) => (
-              <EventCard key={event.id} event={event} />
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="flex flex-col gap-4">
+                <Skeleton className="aspect-[4/3] rounded-3xl" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-5 w-3/4" />
+              </div>
             ))}
           </div>
-          <Pagination
-            skip={skip}
-            limit={PAGE_SIZE}
-            total={query.data.total}
-            onChange={(nextSkip) => updateParams({ skip: nextSkip ? String(nextSkip) : '' })}
+        ) : query.isError ? (
+          <ErrorState error={query.error} onRetry={() => query.refetch()} />
+        ) : query.data.total === 0 ? (
+          <EmptyState
+            icon={CalendarSearchIcon}
+            title={hasFilters ? 'No Events Match Your Filters' : 'No Events Yet'}
+            description={
+              hasFilters
+                ? 'Try a different title or date.'
+                : isAuthenticated
+                  ? 'Create the first one with “New Event”.'
+                  : 'Log in to create one.'
+            }
           />
-        </>
-      )}
-    </div>
+        ) : (
+          <>
+            <div
+              className={cn(
+                'grid gap-x-6 gap-y-10 transition-opacity sm:grid-cols-2 lg:grid-cols-3',
+                query.isPlaceholderData && 'opacity-60',
+              )}
+            >
+              {query.data.items.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+            <Pagination
+              skip={skip}
+              limit={PAGE_SIZE}
+              total={query.data.total}
+              onChange={(nextSkip) => updateParams({ skip: nextSkip ? String(nextSkip) : '' })}
+            />
+          </>
+        )}
+      </div>
+    </>
   )
 }

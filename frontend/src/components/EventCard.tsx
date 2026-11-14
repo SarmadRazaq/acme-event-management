@@ -2,55 +2,66 @@ import { CalendarIcon, MapPinIcon } from 'lucide-react'
 import { Link } from 'react-router'
 
 import type { Event } from '@/api/types'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatDateTime, isPast } from '@/lib/format'
+import { categoryFor } from '@/lib/category'
+import { formatDate, isPast } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
-import { CapacityBar } from './CapacityBar'
+import { EventArtwork } from './EventArtwork'
 
-/** Summary card for one event in the events grid. The whole card is a single link. */
+/** Image-led event card: artwork, category pill + date, title, location and seats left. */
 export function EventCard({ event }: { event: Event }) {
+  const category = categoryFor(event.title)
   const past = isPast(event.event_date)
   const full = event.available_spots === 0
 
   return (
-    <Link
-      to={`/events/${event.id}`}
-      className="group rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-    >
-      <Card className="h-full transition-[box-shadow,transform] group-hover:-translate-y-0.5 group-hover:shadow-md motion-reduce:transform-none">
-        <CardHeader>
-          <CardTitle className="text-base break-words group-hover:text-primary">
-            <h2>{event.title}</h2>
-          </CardTitle>
-          <CardDescription className="flex flex-col gap-1">
-            <span className="flex items-center gap-2">
-              <CalendarIcon className="size-3.5 shrink-0" aria-hidden />
-              {formatDateTime(event.event_date)}
-            </span>
-            <span className="flex min-w-0 items-center gap-2">
-              <MapPinIcon className="size-3.5 shrink-0" aria-hidden />
-              <span className="truncate">{event.location}</span>
-            </span>
-          </CardDescription>
-          {(past || full) && (
-            <div className="flex gap-1.5">
-              {past && <Badge variant="secondary">Past</Badge>}
-              {full && <Badge variant="destructive">Full</Badge>}
-            </div>
+    <article className="group relative flex flex-col gap-4">
+      <EventArtwork
+        id={event.id}
+        title={event.title}
+        className="aspect-[4/3] rounded-3xl shadow-lg shadow-navy/15 transition-[transform,box-shadow] duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-primary/20 motion-reduce:transform-none"
+      >
+        <span
+          className={cn(
+            'absolute top-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase backdrop-blur tabular-nums',
+            full ? 'bg-destructive text-white' : 'bg-white/90 text-navy',
           )}
-        </CardHeader>
-        {event.description && (
-          <CardContent>
-            <p className="line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
-          </CardContent>
+        >
+          {full
+            ? 'Sold out'
+            : `${event.available_spots} ${event.available_spots === 1 ? 'seat' : 'seats'} left`}
+        </span>
+        {past && (
+          <span className="absolute top-3 left-3 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-white uppercase">
+            Past
+          </span>
         )}
-        <CardFooter className="mt-auto">
-          <div className="w-full">
-            <CapacityBar registered={event.registered_count} capacity={event.max_capacity} />
-          </div>
-        </CardFooter>
-      </Card>
-    </Link>
+      </EventArtwork>
+
+      <div className="flex flex-col gap-2 px-1">
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
+          <span className="rounded-full bg-primary px-3 py-1 font-bold tracking-wide text-primary-foreground uppercase">
+            {category.label}
+          </span>
+          <span className="flex items-center gap-1 font-medium text-muted-foreground">
+            <CalendarIcon className="size-3.5" aria-hidden />
+            {formatDate(event.event_date)}
+          </span>
+        </div>
+        <h2 className="font-heading text-lg leading-snug font-bold wrap-break-word">
+          {/* The link covers the whole card (::after), but only the title is read out. */}
+          <Link
+            to={`/events/${event.id}`}
+            className="after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none group-hover:text-primary focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
+          >
+            {event.title}
+          </Link>
+        </h2>
+        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-brand-pink">
+          <MapPinIcon className="size-3.5 shrink-0" aria-hidden />
+          <span className="truncate">{event.location}</span>
+        </p>
+      </div>
+    </article>
   )
 }
