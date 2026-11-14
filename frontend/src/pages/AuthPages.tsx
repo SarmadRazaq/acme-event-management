@@ -3,26 +3,33 @@ import type { ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 
-import { FormError } from '../components/Feedback'
-import { useLogin, useSignup } from '../hooks/useAuth'
+import { FormError } from '@/components/Feedback'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { useLogin, useSignup } from '@/hooks/useAuth'
 import {
   type LoginFormValues,
   type SignupFormValues,
   loginFormSchema,
   signupFormSchema,
-} from '../lib/schemas'
-import { useIsAuthenticated } from '../store/authStore'
+} from '@/lib/schemas'
+import { useIsAuthenticated } from '@/store/authStore'
 
 /** Centered card used by the login and sign-up pages. */
 function AuthCard({ title, subtitle, children }: { title: string; subtitle: ReactNode; children: ReactNode }) {
   return (
-    <div className="mx-auto max-w-md space-y-6 pt-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-      </div>
-      <div className="card p-6">{children}</div>
-    </div>
+    <Card className="mx-auto mt-6 w-full max-w-md">
+      <CardHeader className="text-center">
+        <CardTitle>
+          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        </CardTitle>
+        <CardDescription>{subtitle}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   )
 }
 
@@ -51,49 +58,47 @@ export function LoginPage() {
 
   return (
     <AuthCard
-      title="Log in"
+      title="Log In"
       subtitle={
         <>
           No account?{' '}
-          <Link to="/signup" state={{ from: redirectTo }} className="text-brand-600 hover:underline">
+          <Link to="/signup" state={{ from: redirectTo }} className="text-primary underline-offset-4 hover:underline">
             Sign up
           </Link>
         </>
       }
     >
-      <form onSubmit={submit} noValidate className="space-y-4">
-        <div>
-          <label htmlFor="email" className="label">
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            className="input"
-            aria-invalid={Boolean(errors.email)}
-            {...register('email')}
-          />
-          {errors.email && <p className="field-error">{errors.email.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="password" className="label">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            className="input"
-            aria-invalid={Boolean(errors.password)}
-            {...register('password')}
-          />
-          {errors.password && <p className="field-error">{errors.password.message}</p>}
-        </div>
-        <FormError error={login.error} />
-        <button type="submit" className="btn-primary w-full" disabled={login.isPending}>
-          {login.isPending ? 'Logging in…' : 'Log in'}
-        </button>
+      <form onSubmit={submit} noValidate>
+        <FieldGroup>
+          <Field data-invalid={Boolean(errors.email)}>
+            <FieldLabel htmlFor="email">E-mail</FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              spellCheck={false}
+              aria-invalid={Boolean(errors.email)}
+              {...register('email')}
+            />
+            <FieldError errors={[errors.email]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.password)}>
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              aria-invalid={Boolean(errors.password)}
+              {...register('password')}
+            />
+            <FieldError errors={[errors.password]} />
+          </Field>
+          <FormError error={login.error} />
+          <Button type="submit" className="w-full" disabled={login.isPending}>
+            {login.isPending && <Spinner data-icon="inline-start" />}
+            {login.isPending ? 'Logging In…' : 'Log In'}
+          </Button>
+        </FieldGroup>
       </form>
     </AuthCard>
   )
@@ -118,62 +123,58 @@ export function SignupPage() {
 
   return (
     <AuthCard
-      title="Create an account"
+      title="Create an Account"
       subtitle={
         <>
           Already registered?{' '}
-          <Link to="/login" className="text-brand-600 hover:underline">
+          <Link to="/login" className="text-primary underline-offset-4 hover:underline">
             Log in
           </Link>
         </>
       }
     >
-      <form onSubmit={submit} noValidate className="space-y-4">
-        <div>
-          <label htmlFor="full_name" className="label">
-            Full name
-          </label>
-          <input
-            id="full_name"
-            autoComplete="name"
-            className="input"
-            aria-invalid={Boolean(errors.full_name)}
-            {...register('full_name')}
-          />
-          {errors.full_name && <p className="field-error">{errors.full_name.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="email" className="label">
-            Work e-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            className="input"
-            aria-invalid={Boolean(errors.email)}
-            {...register('email')}
-          />
-          {errors.email && <p className="field-error">{errors.email.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="password" className="label">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            className="input"
-            aria-invalid={Boolean(errors.password)}
-            {...register('password')}
-          />
-          {errors.password && <p className="field-error">{errors.password.message}</p>}
-        </div>
-        <FormError error={signup.error} />
-        <button type="submit" className="btn-primary w-full" disabled={signup.isPending}>
-          {signup.isPending ? 'Creating account…' : 'Sign up'}
-        </button>
+      <form onSubmit={submit} noValidate>
+        <FieldGroup>
+          <Field data-invalid={Boolean(errors.full_name)}>
+            <FieldLabel htmlFor="full_name">Full Name</FieldLabel>
+            <Input
+              id="full_name"
+              autoComplete="name"
+              aria-invalid={Boolean(errors.full_name)}
+              {...register('full_name')}
+            />
+            <FieldError errors={[errors.full_name]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.email)}>
+            <FieldLabel htmlFor="email">Work E-mail</FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              spellCheck={false}
+              aria-invalid={Boolean(errors.email)}
+              {...register('email')}
+            />
+            <FieldError errors={[errors.email]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.password)}>
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              aria-invalid={Boolean(errors.password)}
+              {...register('password')}
+            />
+            <FieldDescription>At least 8 characters.</FieldDescription>
+            <FieldError errors={[errors.password]} />
+          </Field>
+          <FormError error={signup.error} />
+          <Button type="submit" className="w-full" disabled={signup.isPending}>
+            {signup.isPending && <Spinner data-icon="inline-start" />}
+            {signup.isPending ? 'Creating Account…' : 'Sign Up'}
+          </Button>
+        </FieldGroup>
       </form>
     </AuthCard>
   )

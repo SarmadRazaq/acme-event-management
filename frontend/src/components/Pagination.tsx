@@ -1,3 +1,7 @@
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+
 interface PaginationProps {
   skip: number
   limit: number
@@ -15,32 +19,34 @@ export function Pagination({ skip, limit, total, onChange }: PaginationProps) {
   const to = Math.min(skip + limit, total)
 
   return (
-    <nav className="flex items-center justify-between gap-4 pt-2" aria-label="Pagination">
-      <p className="text-sm text-slate-500">
-        Showing <span className="font-medium text-slate-700">{from}</span>–
-        <span className="font-medium text-slate-700">{to}</span> of{' '}
-        <span className="font-medium text-slate-700">{total}</span>
+    <nav className="flex flex-wrap items-center justify-between gap-4 pt-2" aria-label="Pagination">
+      <p className="text-sm text-muted-foreground tabular-nums">
+        Showing <span className="font-medium text-foreground">{from}</span>–
+        <span className="font-medium text-foreground">{to}</span> of{' '}
+        <span className="font-medium text-foreground">{total}</span>
       </p>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="btn-secondary"
+        <Button
+          variant="outline"
+          size="sm"
           disabled={page <= 1}
           onClick={() => onChange(Math.max(0, skip - limit))}
         >
-          ← Previous
-        </button>
-        <span className="text-sm text-slate-500">
+          <ChevronLeftIcon data-icon="inline-start" />
+          Previous
+        </Button>
+        <span className="text-sm text-muted-foreground tabular-nums" aria-current="page">
           Page {page} of {pages}
         </span>
-        <button
-          type="button"
-          className="btn-secondary"
+        <Button
+          variant="outline"
+          size="sm"
           disabled={page >= pages}
           onClick={() => onChange(skip + limit)}
         >
-          Next →
-        </button>
+          Next
+          <ChevronRightIcon data-icon="inline-end" />
+        </Button>
       </div>
     </nav>
   )

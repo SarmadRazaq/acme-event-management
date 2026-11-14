@@ -1,9 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
-import type { Event, EventInput } from '../api/types'
-import { fromDateTimeLocal, toDateTimeLocal } from '../lib/format'
-import { type EventFormValues, eventFormSchema } from '../lib/schemas'
+import type { Event, EventInput } from '@/api/types'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import { Textarea } from '@/components/ui/textarea'
+import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/format'
+import { type EventFormValues, eventFormSchema } from '@/lib/schemas'
+
+import { ConfirmDialog } from './ConfirmDialog'
 import { FormError } from './Feedback'
 
 interface EventFormProps {
@@ -16,19 +25,12 @@ interface EventFormProps {
   onCancel: () => void
 }
 
-/** Shared create / edit form for events (React Hook Form + Zod). */
-export function EventForm({
-  initial,
-  submitLabel,
-  isSubmitting,
-  error,
-  onSubmit,
-  onCancel,
-}: EventFormProps) {
+/** Shared create / edit form for events (React Hook Form + Zod + shadcn Field). */
+export function EventForm({ initial, submitLabel, isSubmitting, error, onSubmit, onCancel }: EventFormProps) {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
@@ -40,6 +42,14 @@ export function EventForm({
     },
   })
 
+  // Warn before closing or reloading the tab with unsaved changes.
+  useEffect(() => {
+    if (!isDirty || isSubmitting) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [isDirty, isSubmitting])
+
   const submit = handleSubmit((values) =>
     onSubmit({
       title: values.title,
@@ -50,91 +60,102 @@ export function EventForm({
     }),
   )
 
+  const cancelButton = (
+    <Button type="button" variant="outline" onClick={isDirty ? undefined : onCancel}>
+      Cancel
+    </Button>
+  )
+
   return (
-    <form onSubmit={submit} noValidate className="card space-y-5 p-6">
-      <div>
-        <label htmlFor="title" className="label">
-          Title
-        </label>
-        <input
-          id="title"
-          className="input"
-          placeholder="Python Async Workshop"
-          aria-invalid={Boolean(errors.title)}
-          {...register('title')}
-        />
-        {errors.title && <p className="field-error">{errors.title.message}</p>}
-      </div>
+    <Card>
+      <form onSubmit={submit} noValidate>
+        <CardContent>
+          <FieldGroup>
+            <Field data-invalid={Boolean(errors.title)}>
+              <FieldLabel htmlFor="title">Title</FieldLabel>
+              <Input
+                id="title"
+                placeholder="Python Async Workshop…"
+                autoComplete="off"
+                aria-invalid={Boolean(errors.title)}
+                {...register('title')}
+              />
+              <FieldError errors={[errors.title]} />
+            </Field>
 
-      <div>
-        <label htmlFor="description" className="label">
-          Description <span className="font-normal text-slate-400">(optional)</span>
-        </label>
-        <textarea
-          id="description"
-          rows={4}
-          className="input"
-          placeholder="What will attendees learn or do?"
-          aria-invalid={Boolean(errors.description)}
-          {...register('description')}
-        />
-        {errors.description && <p className="field-error">{errors.description.message}</p>}
-      </div>
+            <Field data-invalid={Boolean(errors.description)}>
+              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <Textarea
+                id="description"
+                rows={4}
+                placeholder="What will attendees learn or do?"
+                aria-invalid={Boolean(errors.description)}
+                {...register('description')}
+              />
+              <FieldDescription>Optional.</FieldDescription>
+              <FieldError errors={[errors.description]} />
+            </Field>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="eventDate" className="label">
-            Date &amp; time
-          </label>
-          <input
-            id="eventDate"
-            type="datetime-local"
-            className="input"
-            aria-invalid={Boolean(errors.eventDate)}
-            {...register('eventDate')}
-          />
-          {errors.eventDate && <p className="field-error">{errors.eventDate.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="maxCapacity" className="label">
-            Maximum capacity
-          </label>
-          <input
-            id="maxCapacity"
-            type="number"
-            min={1}
-            className="input"
-            aria-invalid={Boolean(errors.maxCapacity)}
-            {...register('maxCapacity', { valueAsNumber: true })}
-          />
-          {errors.maxCapacity && <p className="field-error">{errors.maxCapacity.message}</p>}
-        </div>
-      </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field data-invalid={Boolean(errors.eventDate)}>
+                <FieldLabel htmlFor="eventDate">Date &amp; Time</FieldLabel>
+                <Input
+                  id="eventDate"
+                  type="datetime-local"
+                  aria-invalid={Boolean(errors.eventDate)}
+                  {...register('eventDate')}
+                />
+                <FieldDescription>Your local time.</FieldDescription>
+                <FieldError errors={[errors.eventDate]} />
+              </Field>
+              <Field data-invalid={Boolean(errors.maxCapacity)}>
+                <FieldLabel htmlFor="maxCapacity">Maximum Capacity</FieldLabel>
+                <Input
+                  id="maxCapacity"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  aria-invalid={Boolean(errors.maxCapacity)}
+                  {...register('maxCapacity', { valueAsNumber: true })}
+                />
+                <FieldError errors={[errors.maxCapacity]} />
+              </Field>
+            </div>
 
-      <div>
-        <label htmlFor="location" className="label">
-          Location
-        </label>
-        <input
-          id="location"
-          className="input"
-          placeholder="Conference Room B, HQ"
-          aria-invalid={Boolean(errors.location)}
-          {...register('location')}
-        />
-        {errors.location && <p className="field-error">{errors.location.message}</p>}
-      </div>
+            <Field data-invalid={Boolean(errors.location)}>
+              <FieldLabel htmlFor="location">Location</FieldLabel>
+              <Input
+                id="location"
+                placeholder="Conference Room B, HQ…"
+                autoComplete="off"
+                aria-invalid={Boolean(errors.location)}
+                {...register('location')}
+              />
+              <FieldError errors={[errors.location]} />
+            </Field>
 
-      <FormError error={error} />
+            <FormError error={error} />
+          </FieldGroup>
+        </CardContent>
 
-      <div className="flex justify-end gap-3">
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving…' : submitLabel}
-        </button>
-      </div>
-    </form>
+        <CardFooter className="mt-6 justify-end gap-3">
+          {isDirty ? (
+            <ConfirmDialog
+              trigger={cancelButton}
+              title="Discard Changes?"
+              description="You have unsaved changes to this event. They will be lost."
+              confirmLabel="Discard"
+              onConfirm={onCancel}
+            />
+          ) : (
+            cancelButton
+          )}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Spinner data-icon="inline-start" />}
+            {isSubmitting ? 'Saving…' : submitLabel}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   )
 }
