@@ -32,6 +32,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app alembic.ini ./
 COPY --chown=app:app alembic ./alembic
 COPY --chown=app:app app ./app
+COPY --chown=app:app scripts ./scripts
 COPY --chown=app:app docker-entrypoint.sh gunicorn.conf.py ./
 RUN chmod +x docker-entrypoint.sh
 
