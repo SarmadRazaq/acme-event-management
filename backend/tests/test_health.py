@@ -4,6 +4,7 @@ from httpx import AsyncClient
 
 
 async def test_health_reports_database_ok(client: AsyncClient) -> None:
+    """The health endpoint reports both the API and the database as ok."""
     response = await client.get("/health")
 
     assert response.status_code == 200
@@ -11,6 +12,7 @@ async def test_health_reports_database_ok(client: AsyncClient) -> None:
 
 
 async def test_openapi_documents_all_endpoints(client: AsyncClient) -> None:
+    """The OpenAPI schema lists every required endpoint and method."""
     schema = (await client.get("/openapi.json")).json()
 
     expected = {
@@ -36,6 +38,7 @@ async def test_openapi_documents_all_endpoints(client: AsyncClient) -> None:
 
 
 async def test_swagger_ui_is_served(client: AsyncClient) -> None:
+    """Swagger UI is reachable at /docs."""
     response = await client.get("/docs")
 
     assert response.status_code == 200

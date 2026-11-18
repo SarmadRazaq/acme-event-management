@@ -10,6 +10,7 @@ from tests.conftest import USER
 
 
 async def test_register_returns_user_without_password(client: AsyncClient) -> None:
+    """Registering returns 201 and never exposes the password hash."""
     response = await client.post("/auth/register", json={**USER, "email": "New.User@Acme.com"})
 
     assert response.status_code == 201
@@ -20,6 +21,7 @@ async def test_register_returns_user_without_password(client: AsyncClient) -> No
 
 
 async def test_register_duplicate_email_is_conflict(client: AsyncClient) -> None:
+    """Registering an e-mail that already exists returns 409."""
     await client.post("/auth/register", json=USER)
     response = await client.post("/auth/register", json={**USER, "email": USER["email"].upper()})
 
@@ -37,11 +39,13 @@ async def test_register_duplicate_email_is_conflict(client: AsyncClient) -> None
     ],
 )
 async def test_register_invalid_data_is_rejected(client: AsyncClient, overrides: dict) -> None:
+    """Invalid e-mail, short password, blank name or unknown fields return 422."""
     response = await client.post("/auth/register", json={**USER, **overrides})
     assert response.status_code == 422
 
 
 async def test_login_returns_bearer_token(client: AsyncClient) -> None:
+    """Valid credentials return a Bearer access token."""
     await client.post("/auth/register", json=USER)
     response = await client.post(
         "/auth/login", data={"username": USER["email"].upper(), "password": USER["password"]}
@@ -60,6 +64,7 @@ async def test_login_returns_bearer_token(client: AsyncClient) -> None:
 async def test_login_with_bad_credentials_is_unauthorized(
     client: AsyncClient, username: str, password: str
 ) -> None:
+    """A wrong password or unknown e-mail returns 401."""
     await client.post("/auth/register", json=USER)
     response = await client.post("/auth/login", data={"username": username, "password": password})
 
@@ -69,6 +74,7 @@ async def test_login_with_bad_credentials_is_unauthorized(
 
 
 async def test_me_returns_current_user(client: AsyncClient, auth_headers: dict) -> None:
+    """GET /auth/me returns the user who owns the token."""
     response = await client.get("/auth/me", headers=auth_headers)
 
     assert response.status_code == 200
@@ -76,6 +82,7 @@ async def test_me_returns_current_user(client: AsyncClient, auth_headers: dict) 
 
 
 async def test_me_without_token_is_unauthorized(client: AsyncClient) -> None:
+    """GET /auth/me without a token returns 401."""
     response = await client.get("/auth/me")
     assert response.status_code == 401
 
@@ -89,18 +96,21 @@ async def test_me_without_token_is_unauthorized(client: AsyncClient) -> None:
     ],
 )
 async def test_me_with_invalid_token_is_unauthorized(client: AsyncClient, token: str) -> None:
+    """GET /auth/me with a malformed or forged token returns 401."""
     await client.post("/auth/register", json=USER)
     response = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
 async def test_token_for_deleted_user_is_unauthorized(client: AsyncClient) -> None:
+    """A valid token whose user no longer exists returns 401."""
     token = security.create_access_token(999)  # no user with this id exists
     response = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
 
 
 def test_password_hashing_round_trip() -> None:
+    """A hashed password verifies against the original and rejects others."""
     hashed = security.hash_password("S3cret-pass")
 
     assert hashed != "S3cret-pass"
