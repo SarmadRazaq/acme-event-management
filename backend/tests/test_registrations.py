@@ -9,6 +9,7 @@ from tests.conftest import CreateEvent, registration_payload
 
 
 async def test_register_for_event(client: AsyncClient, create_event: CreateEvent) -> None:
+    """An employee can register for an event and a seat is taken."""
     event = await create_event()
     response = await client.post(
         f"/events/{event['id']}/registrations",
@@ -29,6 +30,7 @@ async def test_register_for_event(client: AsyncClient, create_event: CreateEvent
 async def test_duplicate_registration_is_conflict(
     client: AsyncClient, create_event: CreateEvent
 ) -> None:
+    """Registering the same e-mail twice for one event returns 409."""
     event = await create_event()
     url = f"/events/{event['id']}/registrations"
     await client.post(url, json=registration_payload())
@@ -45,6 +47,7 @@ async def test_duplicate_registration_is_conflict(
 async def test_same_employee_can_join_different_events(
     client: AsyncClient, create_event: CreateEvent
 ) -> None:
+    """One employee may register for several different events."""
     first, second = await create_event(), await create_event(title="Another Event")
 
     for event in (first, second):
@@ -57,6 +60,7 @@ async def test_same_employee_can_join_different_events(
 async def test_full_event_rejects_registration(
     client: AsyncClient, create_event: CreateEvent
 ) -> None:
+    """Registering for an event at capacity returns 409."""
     event = await create_event(max_capacity=2)
     url = f"/events/{event['id']}/registrations"
     for n in range(2):
@@ -91,6 +95,7 @@ async def test_concurrent_registrations_cannot_overbook(
 
 
 async def test_register_for_missing_event_is_not_found(client: AsyncClient) -> None:
+    """Registering for an unknown event returns 404."""
     response = await client.post("/events/999/registrations", json=registration_payload())
 
     assert response.status_code == 404
@@ -112,12 +117,14 @@ async def test_register_for_missing_event_is_not_found(client: AsyncClient) -> N
 async def test_invalid_registration_data_is_rejected(
     client: AsyncClient, create_event: CreateEvent, body: dict
 ) -> None:
+    """Missing, blank or invalid fields, or unknown fields, return 422."""
     event = await create_event()
     response = await client.post(f"/events/{event['id']}/registrations", json=body)
     assert response.status_code == 422
 
 
 async def test_list_registrations(client: AsyncClient, create_event: CreateEvent) -> None:
+    """An event's registrations are listed with their details."""
     event = await create_event()
     url = f"/events/{event['id']}/registrations"
     for n in range(2):
@@ -132,6 +139,7 @@ async def test_list_registrations(client: AsyncClient, create_event: CreateEvent
 
 
 async def test_list_registrations_for_missing_event_is_not_found(client: AsyncClient) -> None:
+    """Listing registrations for an unknown event returns 404."""
     response = await client.get("/events/999/registrations")
     assert response.status_code == 404
 
@@ -139,6 +147,7 @@ async def test_list_registrations_for_missing_event_is_not_found(client: AsyncCl
 async def test_cancel_registration_frees_a_seat(
     client: AsyncClient, auth_headers: dict, create_event: CreateEvent
 ) -> None:
+    """Cancelling a registration returns 204 and frees a seat."""
     event = await create_event(max_capacity=1)
     url = f"/events/{event['id']}/registrations"
     registration = (await client.post(url, json=registration_payload())).json()
@@ -154,6 +163,7 @@ async def test_cancel_registration_frees_a_seat(
 async def test_cancel_missing_registration_is_not_found(
     client: AsyncClient, auth_headers: dict
 ) -> None:
+    """Cancelling an unknown registration returns 404."""
     response = await client.delete("/registrations/999", headers=auth_headers)
 
     assert response.status_code == 404
@@ -163,6 +173,7 @@ async def test_cancel_missing_registration_is_not_found(
 async def test_cancel_registration_requires_authentication(
     client: AsyncClient, create_event: CreateEvent
 ) -> None:
+    """Cancelling a registration without a token returns 401."""
     event = await create_event()
     registration = (
         await client.post(f"/events/{event['id']}/registrations", json=registration_payload())

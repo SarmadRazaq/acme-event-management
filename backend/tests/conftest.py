@@ -111,6 +111,7 @@ def create_event(client: AsyncClient, auth_headers: dict[str, str]) -> CreateEve
     """Return a helper that creates an event through the API and returns its JSON."""
 
     async def _create(**overrides: Any) -> dict[str, Any]:
+        """Create an event through the API and return its JSON body."""
         response = await client.post(
             "/events", json=event_payload(**overrides), headers=auth_headers
         )

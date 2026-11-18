@@ -26,6 +26,7 @@ def titles(response_json: dict) -> list[str]:
 
 @pytest.mark.usefixtures("sample_events")
 async def test_default_page_size_and_envelope(client: AsyncClient) -> None:
+    """Without parameters, the list uses the default limit and page envelope."""
     body = (await client.get("/events")).json()
 
     assert body["total"] == 5
@@ -36,6 +37,7 @@ async def test_default_page_size_and_envelope(client: AsyncClient) -> None:
 
 @pytest.mark.usefixtures("sample_events")
 async def test_skip_and_limit(client: AsyncClient) -> None:
+    """skip and limit return the expected slice of events."""
     body = (await client.get("/events", params={"skip": 1, "limit": 2})).json()
 
     assert body["total"] == 5  # total ignores pagination
@@ -44,18 +46,21 @@ async def test_skip_and_limit(client: AsyncClient) -> None:
 
 @pytest.mark.usefixtures("sample_events")
 async def test_skip_beyond_end_returns_empty_page(client: AsyncClient) -> None:
+    """Skipping past the last event returns an empty page with the real total."""
     body = (await client.get("/events", params={"skip": 50})).json()
     assert body["items"] == [] and body["total"] == 5
 
 
 @pytest.mark.parametrize("params", [{"skip": -1}, {"limit": 0}, {"limit": 101}, {"limit": "ten"}])
 async def test_invalid_pagination_is_rejected(client: AsyncClient, params: dict) -> None:
+    """A negative skip or a non-numeric or out-of-range limit returns 422."""
     response = await client.get("/events", params=params)
     assert response.status_code == 422
 
 
 @pytest.mark.usefixtures("sample_events")
 async def test_filter_by_title_is_partial_and_case_insensitive(client: AsyncClient) -> None:
+    """The title filter matches substrings regardless of case."""
     body = (await client.get("/events", params={"title": "PYTHON"})).json()
 
     assert body["total"] == 2
@@ -69,12 +74,14 @@ async def test_filter_by_title_is_partial_and_case_insensitive(client: AsyncClie
 async def test_title_wildcards_are_matched_literally(
     client: AsyncClient, term: str, expected: list[str]
 ) -> None:
+    """SQL wildcards like % and _ in the title filter are treated as text."""
     body = (await client.get("/events", params={"title": term})).json()
     assert titles(body) == expected
 
 
 @pytest.mark.usefixtures("sample_events")
 async def test_filter_by_date(client: AsyncClient) -> None:
+    """The date filter returns only events on that calendar day."""
     body = (await client.get("/events", params={"date": "2026-11-20"})).json()
 
     # Both events on 20 Nov (09:00 and 23:30 UTC) match; 21 Nov does not.
@@ -83,6 +90,7 @@ async def test_filter_by_date(client: AsyncClient) -> None:
 
 @pytest.mark.usefixtures("sample_events")
 async def test_filters_combine_with_each_other_and_pagination(client: AsyncClient) -> None:
+    """Title and date filters work together and with pagination."""
     params = {"title": "python", "date": "2026-11-20", "skip": 1, "limit": 1}
     body = (await client.get("/events", params=params)).json()
 
@@ -92,16 +100,19 @@ async def test_filters_combine_with_each_other_and_pagination(client: AsyncClien
 
 @pytest.mark.usefixtures("sample_events")
 async def test_filter_with_no_matches(client: AsyncClient) -> None:
+    """A filter that matches nothing returns an empty page."""
     body = (await client.get("/events", params={"title": "kubernetes"})).json()
     assert body == {"items": [], "total": 0, "skip": 0, "limit": 10}
 
 
 async def test_invalid_date_filter_is_rejected(client: AsyncClient) -> None:
+    """A malformed date filter returns 422."""
     response = await client.get("/events", params={"date": "2026-13-45"})
     assert response.status_code == 422
 
 
 async def test_registrations_are_paginated(client: AsyncClient, create_event: CreateEvent) -> None:
+    """An event's registration list supports skip and limit."""
     event = await create_event(max_capacity=10)
     url = f"/events/{event['id']}/registrations"
     for n in range(4):
